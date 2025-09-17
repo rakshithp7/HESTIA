@@ -1,0 +1,19 @@
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Required for WebRTC
+    Cross-Origin-Embedder-Policy = "require-corp"
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Allow Supabase Realtime WebSocket connections
+    Content-Security-Policy = "connect-src 'self' wss://*.supabase.co ws://*.supabase.co https://*.supabase.co https://supabase.co https://*.netlify.app data:; frame-ancestors 'self'; form-action 'self';"
+    # Standard security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "microphone=(), camera=()"
+
+# Redirect all routes to index.html for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

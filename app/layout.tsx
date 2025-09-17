@@ -3,6 +3,7 @@ import { Unna } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import Navbar from '@/components/Navbar';
 
 const unna = Unna({
   variable: '--font-unna',
@@ -10,9 +11,9 @@ const unna = Unna({
   weight: ['400', '700'],
 });
 
-const hestia = localFont({
-  src: [{ path: '/fonts/Hestia-Regular.ttf' }],
-  variable: '--font-hestia',
+const difont = localFont({
+  src: [{ path: '/fonts/difont.ttf' }],
+  variable: '--font-difont',
 });
 
 export const metadata: Metadata = {
@@ -27,8 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${unna.variable} ${hestia.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className={`${unna.variable} ${difont.variable} antialiased`}>
+        <ThemeProvider>
+          <div className="relative">
+            <Navbar />
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

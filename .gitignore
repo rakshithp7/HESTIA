@@ -42,3 +42,5 @@ next-env.d.ts
 
 # cursor rules
 /.cursor/
+# Local Netlify folder
+.netlify
