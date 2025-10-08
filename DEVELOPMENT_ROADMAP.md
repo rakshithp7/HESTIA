@@ -1,5 +1,17 @@
 ## Development Roadmap
 
+### Identity Verification
+
+- 2025-09-18: Integrated Stripe Identity verification flow
+
+  - Added secure environment handling for Stripe secrets and Supabase service role in `lib/env/server.ts`
+  - Created Stripe Identity service helper at `lib/stripe/identity.ts` and Supabase service client at `lib/supabase/service.ts`
+  - Implemented API endpoints for starting, retrying, and receiving Stripe Identity webhooks under `app/api/identity/*`
+  - Built `/verify` experience with session polling, status messaging, and retry handling; wired age verification page CTA
+  - Updated auth-gate layout and Connect session page to enforce verification status and react to webhook-driven changes
+  - Added reusable Stripe Identity flow support via `STRIPE_IDENTITY_FLOW_ID` env with provided email details for consistent configuration
+  - Persist Stripe-sourced date of birth to `profiles.date_of_birth` upon successful verification for future age gating
+
 ### WebRTC Voice Implementation
 
 - 2025-09-02: Implemented simplified WebRTC voice chat
@@ -67,6 +79,11 @@
   - Reset form fields after successful sign-up
   - Added success message after sign-up with email verification instructions
   - Clear error messages when switching between sign-in and sign-up modes
+- 2025-09-19: Expanded verification resend flow for sign-up and sign-in
+  - Store the submitted email and surface resend controls once sign-up succeeds
+  - Resurfaced resend option on sign-in when Supabase reports the email as unconfirmed
+  - Cooldown now escalates 60s → 2m → 5m → 10m with clear messaging between attempts
+  - Wired Supabase `auth.resend` to reuse existing age verification redirect
 
 ### Supabase Auth Integration
 
@@ -161,3 +178,5 @@
   - Renders `AuthForms` when unauthenticated; renders children when authenticated
   - `/(root)/(auth-gate)/connect/page.tsx` simplified to static content
   - Benefit: single source of truth for gating, less duplication, easier future expansion
+
+### SEO & Metadata

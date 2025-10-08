@@ -1,12 +1,15 @@
 'use client';
 import React from 'react';
-import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle } from 'lucide-react';
+import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AudioWaveform from '@/components/AudioWaveform';
 import { ChatSection } from '@/components/chat/ChatSection';
 import { useRTCSessionContext } from '@/lib/rtc-session-context';
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import type { Profile } from '@/lib/supabase/types';
+import { profileNeedsVerification } from '@/lib/verification';
 
 export default function ConnectSessionPage() {
   const rtcHook = useRTCSessionContext();
@@ -31,6 +34,12 @@ export default function ConnectSessionPage() {
     end,
   } = rtcHook;
 
+  const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = React.useState(true);
+  const [profileError, setProfileError] = React.useState<string | null>(null);
+  const [userId, setUserId] = React.useState<string | null>(null);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const topic = (searchParams.get('topic') || '').toString();
@@ -39,9 +48,102 @@ export default function ConnectSessionPage() {
   const [mobilePanel, setMobilePanel] = React.useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
 
+  const fetchProfile = React.useCallback(
+    async (id: string, options: { silent?: boolean } = {}) => {
+      if (!options.silent) {
+        setProfileLoading(true);
+      }
+      setProfileError(null);
+
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single<Profile>();
+
+        if (error) {
+          console.error('[connect/session] Failed to load profile', error);
+          setProfileError('Unable to confirm your verification status. Please refresh.');
+        } else {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('[connect/session] Unexpected profile fetch error', err);
+        setProfileError('Unable to confirm your verification status. Please refresh.');
+      } finally {
+        if (!options.silent) {
+          setProfileLoading(false);
+        }
+      }
+    },
+    [supabase]
+  );
+
   React.useEffect(() => {
     setMobilePanel(isChatMode ? 'chat' : 'voice');
   }, [isChatMode]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const initialiseProfile = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (error) {
+          console.error('[connect/session] Failed to resolve user', error);
+          setProfileError('Unable to confirm your verification status. Please refresh.');
+          setProfileLoading(false);
+          return;
+        }
+
+        if (!user) {
+          setProfileError('Your session has expired. Please sign in again.');
+          setProfileLoading(false);
+          router.replace('/sign-in');
+          return;
+        }
+
+        setUserId(user.id);
+        await fetchProfile(user.id);
+
+        channel = supabase
+          .channel(`profile-verification-${user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+            (payload) => {
+              setProfile(payload.new as Profile);
+            }
+          )
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              console.debug('[connect/session] Subscribed to profile verification updates');
+            }
+          });
+      } catch (err) {
+        console.error('[connect/session] Unexpected profile initialisation error', err);
+        if (isMounted) {
+          setProfileError('Unable to confirm your verification status. Please refresh.');
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    initialiseProfile();
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [fetchProfile, router, supabase]);
 
   const handleDisconnect = React.useCallback(() => {
     if (typeof end === 'function') {
@@ -66,6 +168,32 @@ export default function ConnectSessionPage() {
       return false;
     }
   }, [requestLocalAudio]);
+
+  const handleProfileRetry = React.useCallback(async () => {
+    if (userId) {
+      await fetchProfile(userId);
+      return;
+    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      setUserId(user.id);
+      await fetchProfile(user.id);
+    }
+  }, [fetchProfile, supabase, userId]);
+
+  if (profileLoading) {
+    return <VerificationLoadingState />;
+  }
+
+  if (profileError) {
+    return <VerificationErrorState message={profileError} onRetry={handleProfileRetry} />;
+  }
+
+  if (profileNeedsVerification(profile)) {
+    return <VerificationBlockedState onGoToVerify={() => router.replace('/verify')} />;
+  }
 
   if (isDisconnecting) {
     return <DisconnectingState />;
@@ -125,6 +253,47 @@ export default function ConnectSessionPage() {
       </div>
 
       <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
+    </div>
+  );
+}
+
+function VerificationLoadingState() {
+  return (
+    <div className="flex h-full w-full items-center justify-center py-12">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Loader2 className="size-10 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Checking your verification status…</p>
+      </div>
+    </div>
+  );
+}
+
+function VerificationErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center px-6 py-12">
+      <div className="mx-auto max-w-md space-y-4 text-center">
+        <ShieldAlert className="mx-auto size-12 text-destructive" />
+        <p className="text-base text-muted-foreground">{message}</p>
+        <Button onClick={onRetry}>Retry</Button>
+      </div>
+    </div>
+  );
+}
+
+function VerificationBlockedState({ onGoToVerify }: { onGoToVerify: () => void }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center px-6 py-12">
+      <div className="mx-auto max-w-md space-y-6 text-center">
+        <ShieldAlert className="mx-auto size-14 text-amber-500" />
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">Verification Required</h2>
+          <p className="text-muted-foreground">
+            We need to confirm your identity before you can continue in Connect. This protects the community and keeps
+            conversations safe.
+          </p>
+        </div>
+        <Button onClick={onGoToVerify}>Start verification</Button>
+      </div>
     </div>
   );
 }

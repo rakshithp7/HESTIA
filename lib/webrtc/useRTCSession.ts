@@ -489,7 +489,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       }
       channel.unsubscribe();
     };
-  }, [supabase, topic, mode, clientId, attemptMatch, announcePresence, sendPresenceNow]);
+  }, [supabase, topic, mode, clientId, attemptMatch, announcePresence, sendPresenceNow, updateRoomId, updateStatus]);
 
   // Set up WebRTC when we have a room
   useEffect(() => {
