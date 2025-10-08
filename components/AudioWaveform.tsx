@@ -27,9 +27,18 @@ export default function AudioWaveform({
   const animationRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Set up audio analyzer when stream is available
+  // Track audio tracks count to detect changes
+  const [audioTrackCount, setAudioTrackCount] = useState(0);
+
+  // Update track count when stream changes
   useEffect(() => {
-    if (!audioStream || !isActive) {
+    const count = audioStream?.getAudioTracks().length || 0;
+    setAudioTrackCount(count);
+  }, [audioStream]);
+
+  // Set up audio analyzer when stream is available and has audio tracks
+  useEffect(() => {
+    if (!audioStream || !isActive || audioTrackCount === 0) {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
@@ -129,7 +138,7 @@ export default function AudioWaveform({
       }
       source.disconnect();
     };
-  }, [audioStream, isActive, barCount, muted, soundThreshold]);
+  }, [audioStream, isActive, barCount, muted, soundThreshold, audioTrackCount]);
 
   // When not active or when muted, show appropriate visualization
   useEffect(() => {

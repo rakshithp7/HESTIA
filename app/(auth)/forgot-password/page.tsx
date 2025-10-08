@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-start md:items-center justify-center px-4 py-10">
+    <div className="screen-height flex items-start md:items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl">
         <h1 className="text-center text-5xl md:text-6xl tracking-widest uppercase mb-10">RESET PASSWORD</h1>
 

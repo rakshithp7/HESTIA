@@ -1,18 +1,18 @@
 'use client';
 import React from 'react';
-import { MicOff, Loader2, Mic } from 'lucide-react';
+import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSearchParams } from 'next/navigation';
-import { useVoiceRTC } from '@/lib/webrtc/useVoiceRTC';
 import AudioWaveform from '@/components/AudioWaveform';
-import { SessionContext } from './layout';
+import { ChatSection } from '@/components/chat/ChatSection';
+import { useRTCSessionContext } from '@/lib/rtc-session-context';
+import { cn } from '@/lib/utils';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function ConnectSessionPage() {
-  const params = useSearchParams();
-  const topic = (params.get('topic') || '').toString();
-  const rtcHook = useVoiceRTC({ topic });
+  const rtcHook = useRTCSessionContext();
   const {
     status,
+    mode,
     muted,
     setMuted,
     setAudioElementRef,
@@ -21,11 +21,42 @@ export default function ConnectSessionPage() {
     requestLocalAudio,
     localStream,
     remoteStream,
+    // Chat functionality
+    chatMessages,
+    isPeerTyping,
+    isChatReady,
+    sendChatMessage,
+    sendTypingStart,
+    sendTypingStop,
     end,
   } = rtcHook;
 
-  // Create a stable wrapper for requestLocalAudio to ensure it's properly bound
-  // and doesn't cause unnecessary re-renders
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const topic = (searchParams.get('topic') || '').toString();
+  const isChatMode = mode === 'chat';
+  const isMatching = status === 'idle' || status === 'waiting' || status === 'connecting';
+  const [mobilePanel, setMobilePanel] = React.useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
+  const [isDisconnecting, setIsDisconnecting] = React.useState(false);
+
+  React.useEffect(() => {
+    setMobilePanel(isChatMode ? 'chat' : 'voice');
+  }, [isChatMode]);
+
+  const handleDisconnect = React.useCallback(() => {
+    if (typeof end === 'function') {
+      setIsDisconnecting(true);
+      end();
+      setTimeout(() => router.push('/connect'), 300);
+    } else {
+      router.push('/connect');
+    }
+  }, [end, router]);
+
+  const handleReport = React.useCallback(() => {
+    router.push(`/contact?topic=${encodeURIComponent(topic)}`);
+  }, [router, topic]);
+
   const handleRequestLocalAudio = React.useCallback(async () => {
     console.log('Requesting local audio from stable wrapper');
     try {
@@ -36,24 +67,197 @@ export default function ConnectSessionPage() {
     }
   }, [requestLocalAudio]);
 
+  if (isDisconnecting) {
+    return <DisconnectingState />;
+  }
+
+  if (isMatching) {
+    return <MatchingState status={status} onCancel={handleDisconnect} />;
+  }
+
+  const hasVoiceSection = !isChatMode;
+
   return (
-    <SessionContext.Provider value={{ end }}>
-      <SessionContent
-        status={status}
-        muted={muted}
-        setMuted={setMuted}
-        setAudioElementRef={setAudioElementRef}
-        micReady={micReady}
-        micPermissionChecked={micPermissionChecked}
-        requestLocalAudio={handleRequestLocalAudio}
-        localStream={localStream}
-        remoteStream={remoteStream}
-      />
-    </SessionContext.Provider>
+    <div className="flex screen-height flex-col gap-6 md:flex-row md:gap-8">
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="flex h-full flex-1 flex-col gap-6 md:flex-row">
+          {!isChatMode && (
+            <div className={cn('h-full p-1 md:w-1/4', mobilePanel === 'voice' ? 'flex md:flex' : 'hidden md:flex')}>
+              <VoiceSection
+                status={status}
+                muted={muted}
+                setMuted={setMuted}
+                setAudioElementRef={setAudioElementRef}
+                micReady={micReady}
+                micPermissionChecked={micPermissionChecked}
+                requestLocalAudio={handleRequestLocalAudio}
+                localStream={localStream}
+                remoteStream={remoteStream}
+              />
+            </div>
+          )}
+
+          <div
+            className={cn(
+              'flex min-h-0 h-full flex-1 flex-col rounded-xl bg-accent/10 dark:bg-accent/20',
+              isChatMode ? 'w-full' : 'md:w-3/4',
+              !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
+            )}>
+            <ChatSection
+              messages={chatMessages}
+              isPeerTyping={isPeerTyping}
+              isChatReady={isChatReady}
+              onSendMessage={sendChatMessage}
+              onTypingStart={sendTypingStart}
+              onTypingStop={sendTypingStop}
+            />
+          </div>
+        </div>
+
+        <MobileSessionActions
+          isVisible={hasVoiceSection}
+          mobilePanel={mobilePanel}
+          setMobilePanel={setMobilePanel}
+          onDisconnect={handleDisconnect}
+          onReport={handleReport}
+        />
+        {!hasVoiceSection && <MobileChatOnlyActions onDisconnect={handleDisconnect} onReport={handleReport} />}
+      </div>
+
+      <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
+    </div>
   );
 }
 
-function SessionContent({
+function DisconnectingState() {
+  return (
+    <div className="flex h-full w-full items-center justify-center py-12">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Loader2 className="size-10 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Wrapping up your session…</p>
+      </div>
+    </div>
+  );
+}
+
+function MatchingState({ status, onCancel }: { status: string; onCancel: () => void }) {
+  const statusDescription = React.useMemo(() => {
+    switch (status) {
+      case 'waiting':
+        return 'Waiting for someone to join the conversation';
+      case 'connecting':
+        return 'Connecting you with a new friend';
+      default:
+        return 'Finding the best possible match';
+    }
+  }, [status]);
+
+  return (
+    <div className="flex h-full w-full flex-1 items-center justify-center py-12">
+      <div className="flex flex-col items-center gap-6 text-center">
+        <div className="relative h-36 w-36">
+          <div className="absolute inset-2 rounded-full border-2 border-primary/40 animate-ping" />
+          <div className="absolute inset-6 rounded-full border-2 border-primary/60 animate-ping [animation-delay:150ms]" />
+          <div className="relative flex h-full w-full items-center justify-center rounded-full bg-primary/10" />
+        </div>
+        <div className="text-2xl font-semibold tracking-wide">Looking for a friend...</div>
+        <p className="text-sm text-muted-foreground">{statusDescription}</p>
+        <Button type="button" variant="outline" size="sm" className="mt-4 gap-2" onClick={onCancel}>
+          <XSquare className="size-4" />
+          <span>Cancel</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type MobilePanel = 'voice' | 'chat';
+
+type ActionHandlers = {
+  onDisconnect: () => void;
+  onReport: () => void;
+};
+
+function MobileSessionActions({
+  isVisible,
+  mobilePanel,
+  setMobilePanel,
+  onDisconnect,
+  onReport,
+}: {
+  isVisible: boolean;
+  mobilePanel: MobilePanel;
+  setMobilePanel: React.Dispatch<React.SetStateAction<MobilePanel>>;
+} & ActionHandlers) {
+  if (!isVisible) return null;
+
+  return (
+    <div className="flex flex-col gap-3 md:hidden">
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="flex-1 gap-2"
+          onClick={() => setMobilePanel((prev) => (prev === 'voice' ? 'chat' : 'voice'))}
+          aria-pressed={mobilePanel === 'chat'}>
+          {mobilePanel === 'voice' ? <MessageSquare className="size-4" /> : <Phone className="size-4" />}
+          <span className="text-sm font-medium">{mobilePanel === 'voice' ? 'Show Chat' : 'Show Audio'}</span>
+        </Button>
+        <Button type="button" size="sm" variant="destructive" className="flex-1 gap-2" onClick={onDisconnect}>
+          <XSquare className="size-4" />
+          <span className="text-sm font-semibold">Disconnect</span>
+        </Button>
+      </div>
+      <Button type="button" variant="ghost" className="w-full gap-2" onClick={onReport}>
+        <AlertTriangle className="size-4" />
+        <span className="text-sm font-medium">Report an Issue</span>
+      </Button>
+    </div>
+  );
+}
+
+function MobileChatOnlyActions({ onDisconnect, onReport }: ActionHandlers) {
+  return (
+    <div className="flex flex-col gap-3 md:hidden">
+      <Button type="button" size="sm" variant="destructive" className="w-full gap-2" onClick={onDisconnect}>
+        <XSquare className="size-4" />
+        <span className="text-sm font-semibold">Disconnect</span>
+      </Button>
+      <Button type="button" variant="ghost" className="w-full gap-2" onClick={onReport}>
+        <AlertTriangle className="size-4" />
+        <span className="text-sm font-medium">Report an Issue</span>
+      </Button>
+    </div>
+  );
+}
+
+function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
+  return (
+    <div className="hidden md:flex md:w-[80px] flex-col items-center gap-8 pt-6">
+      <div className="flex h-full w-full flex-col items-center gap-4 justify-evenly">
+        <Button
+          variant="ghost"
+          aria-label="End Session"
+          className="flex h-auto w-full min-h-[80px] flex-col items-center justify-center gap-1 hover:bg-accent/80 p-2"
+          onClick={onDisconnect}>
+          <XSquare className="size-6 text-destructive" />
+          <span className="text-xs opacity-80 text-center leading-tight">End Session</span>
+        </Button>
+        <Button
+          variant="ghost"
+          aria-label="Report an Issue"
+          className="flex h-auto w-full min-h-[80px] flex-col items-center justify-center gap-1 hover:bg-accent/80 p-2"
+          onClick={onReport}>
+          <AlertTriangle className="size-6" />
+          <span className="text-xs opacity-80 text-center leading-tight">Report an Issue</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function VoiceSection({
   status,
   muted,
   setMuted,
@@ -74,58 +278,72 @@ function SessionContent({
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
 }) {
-  // Get connection status display info
   const getStatusInfo = () => {
     switch (status) {
       case 'waiting':
-        return { text: 'Waiting for someone to join...', icon: <Loader2 className="size-6 animate-spin" /> };
+        return { text: 'Waiting...', icon: <Loader2 className="size-4 animate-spin" /> };
       case 'connecting':
-        return { text: 'Establishing connection...', icon: <Loader2 className="size-6 animate-spin" /> };
+        return { text: 'Connecting...', icon: <Loader2 className="size-4 animate-spin" /> };
       case 'connected':
         return { text: 'Connected', icon: null };
       case 'permission-denied':
-        return { text: 'Microphone permission denied', icon: null };
+        return { text: 'Mic denied', icon: null };
       case 'no-mic':
-        return { text: 'No microphone detected', icon: null };
+        return { text: 'No mic', icon: null };
       case 'media-error':
-        return { text: 'Error accessing microphone', icon: null };
+        return { text: 'Mic error', icon: null };
       case 'ended':
         return { text: 'Call ended', icon: null };
       default:
-        return { text: 'Initializing...', icon: <Loader2 className="size-6 animate-spin" /> };
+        return { text: 'Init...', icon: <Loader2 className="size-4 animate-spin" /> };
     }
   };
 
   const statusInfo = getStatusInfo();
 
+  const getMicStatusInfo = () => {
+    if (!micPermissionChecked) {
+      return { text: 'Checking mic...', icon: <Loader2 className="size-4 animate-spin" /> };
+    }
+    switch (status) {
+      case 'permission-denied':
+        return { text: 'Mic access denied', icon: null };
+      case 'no-mic':
+        return { text: 'No mic detected', icon: null };
+      default:
+        return { text: 'Mic required', icon: null };
+    }
+  };
+
+  const micStatusInfo = getMicStatusInfo();
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Left Panel - Peer */}
-      <div className="relative rounded-3xl border-[4px] border-primary/60 p-6 min-h-[420px] flex flex-col items-center justify-between">
-        <div className="absolute left-4 top-3 text-sm opacity-70">Peer</div>
-        <div className="flex flex-col items-center justify-center flex-1 w-full">
+    <div className="flex flex-col gap-4 h-full w-full">
+      {/* Peer Voice Panel */}
+      <div className="relative rounded-2xl border-2 border-secondary p-4 h-1/2">
+        <div className="absolute left-2 top-2 text-xs opacity-70">Peer</div>
+        <div className="flex flex-col items-center justify-center pt-6 h-full">
           {status === 'connected' ? (
             <AudioWaveform
               audioStream={remoteStream}
               isActive={status === 'connected'}
-              color="var(--primary)"
-              className="mb-4"
-              // Remote stream doesn't have a muted state we control
+              color="var(--secondary)"
+              className="mb-8 h-16"
             />
           ) : (
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center py-4">
               {statusInfo.icon}
-              <div className="mt-4 text-base font-medium">{statusInfo.text}</div>
+              <div className="mt-2 text-sm">{statusInfo.text}</div>
             </div>
           )}
         </div>
         <audio ref={setAudioElementRef} autoPlay playsInline className="hidden" />
       </div>
 
-      {/* Right Panel - You */}
-      <div className="relative rounded-3xl border-[4px] border-primary/60 p-6 min-h-[420px] flex flex-col items-center justify-between">
-        <div className="absolute right-4 top-3 text-sm opacity-70">You</div>
-        <div className="flex-1 flex flex-col items-center justify-center w-full">
+      {/* Your Voice Panel */}
+      <div className="relative rounded-2xl border-2 border-primary p-4 h-1/2">
+        <div className="absolute right-2 top-2 text-xs opacity-70">You</div>
+        <div className="flex flex-col items-center justify-center pt-6 h-full">
           {micReady ? (
             <>
               <AudioWaveform
@@ -133,59 +351,38 @@ function SessionContent({
                 isActive={micReady}
                 muted={muted}
                 color="var(--primary)"
-                className="mb-4"
+                className="mb-4 h-16"
               />
-              <div className="text-sm opacity-70">{muted ? 'Microphone muted' : 'Speaking'}</div>
+              <div className="text-xs opacity-70 mb-4">{muted ? 'Muted' : 'Speaking'}</div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => setMuted(!muted)}
+                aria-label={muted ? 'Unmute' : 'Mute'}>
+                <MicOff className="size-3" />
+                <span className="text-xs">{muted ? 'Unmute' : 'Mute'}</span>
+              </Button>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center py-4">
               {micPermissionChecked && (
                 <Button
                   variant="outline"
-                  className="mb-4 gap-2"
-                  onClick={async (e) => {
-                    // Prevent default to avoid any form submission
-                    e.preventDefault();
-                    console.log('Enable Microphone button clicked');
-                    try {
-                      const result = await requestLocalAudio();
-                      console.log('Microphone access result:', result);
-                    } catch (err) {
-                      console.error('Error enabling microphone:', err);
-                    }
-                  }}>
-                  <Mic className="size-4" />
-                  <span>Enable Microphone</span>
+                  size="sm"
+                  className="mb-2 gap-1"
+                  onClick={() => requestLocalAudio().catch((err) => console.error('Error enabling microphone:', err))}>
+                  <Mic className="size-3" />
+                  <span className="text-xs">Enable Mic</span>
                 </Button>
               )}
-
-              {!micPermissionChecked ? (
-                <>
-                  <Loader2 className="size-6 animate-spin mb-4" />
-                  <div className="text-sm opacity-70">Checking microphone access...</div>
-                </>
-              ) : (
-                <div className="text-sm opacity-70">
-                  {status === 'permission-denied'
-                    ? 'Microphone access denied. Please allow access in your browser settings.'
-                    : status === 'no-mic'
-                    ? 'No microphone detected on your device.'
-                    : 'Microphone access required'}
-                </div>
-              )}
+              <div className="flex flex-col items-center gap-2">
+                {micStatusInfo.icon}
+                <div className="text-xs opacity-70">{micStatusInfo.text}</div>
+              </div>
             </div>
           )}
         </div>
-        {micReady && (
-          <Button
-            variant={muted ? 'outline' : 'ghost'}
-            className="gap-2"
-            onClick={() => setMuted(!muted)}
-            aria-label={muted ? 'Unmute' : 'Mute'}>
-            <MicOff className="size-4" />
-            <span>{muted ? 'Unmute' : 'Mute'}</span>
-          </Button>
-        )}
       </div>
     </div>
   );

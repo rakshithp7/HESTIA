@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
+    <div className="screen-height flex items-center justify-center p-4">
       <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
         <div className="min-w-[150px] md:min-w-[200px]">
           <Image

@@ -10,14 +10,18 @@ export default function ConnectPage() {
   const [mode, setMode] = useState<'voice' | 'chat' | null>(null);
 
   function onConnect() {
-    if (mode === 'voice' && topic.trim().length > 0) {
-      const params = new URLSearchParams({ topic: topic.trim() });
-      router.push(`/connect/session?${params.toString()}`);
-    }
+    if (!mode || topic.trim().length === 0) return;
+
+    const params = new URLSearchParams({
+      topic: topic.trim(),
+      mode,
+    });
+
+    router.push(`/connect/session?${params.toString()}`);
   }
 
   return (
-    <div className="px-6 py-8 md:px-12">
+    <div className="px-6 py-0 md:py-8 md:px-12">
       <div className="mx-auto max-w-xl mt-24 text-center space-y-8">
         <h2 className="text-2xl md:text-4xl mb-8">What’s on your mind?</h2>
         <input
@@ -52,7 +56,7 @@ export default function ConnectPage() {
           size="lg"
           className="mt-6"
           onClick={onConnect}
-          disabled={!(mode === 'voice' && topic.trim().length > 0)}>
+          disabled={!(mode && topic.trim().length > 0)}>
           Connect
         </Button>
       </div>

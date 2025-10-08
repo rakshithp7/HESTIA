@@ -97,9 +97,9 @@ export default function ResourcesPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Resources search text"
+              placeholder="search..."
               aria-label="Search resources"
-              className="w-40 md:w-64 rounded-xl border border-border bg-input pl-9 pr-3 py-1 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="w-32 md:w-64 rounded-xl border border-border bg-input pl-9 pr-3 py-1 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </div>
         </div>
