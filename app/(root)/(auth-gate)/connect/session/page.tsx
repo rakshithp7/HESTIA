@@ -105,7 +105,7 @@ export default function ConnectSessionPage() {
         if (!user) {
           setProfileError('Your session has expired. Please sign in again.');
           setProfileLoading(false);
-          router.replace('/sign-in');
+          router.replace('/connect');
           return;
         }
 

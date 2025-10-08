@@ -36,7 +36,7 @@ export default async function AgeVerificationPage() {
           <p>Hi! Great to see you. We are so glad you have found us, and are excited to hear your story.</p>
           <p>
             Before you can chat with others, we ask that you verify your age with us (it&apos;s easy, I promise!)
-            through uploading a photo ID and real-time selfie.
+            through uploading a photo ID.
           </p>
           <p>
             We want to make sure that all users are at least 16 years old, but also ensure that users are matched with

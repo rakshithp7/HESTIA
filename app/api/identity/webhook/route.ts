@@ -1,6 +1,9 @@
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { constructIdentityWebhookEvent, retrieveVerificationReport } from '@/lib/stripe/identity';
+import {
+  constructIdentityWebhookEvent,
+  retrieveSensitiveVerificationSession,
+} from '@/lib/stripe/identity';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { nextProfileStatusForSession } from '@/lib/verification';
 
@@ -64,18 +67,24 @@ async function handleVerificationSessionUpdate(session: Stripe.Identity.Verifica
     verification_completed_at: isTerminal ? new Date().toISOString() : null,
   };
 
-  if (isVerified && lastReportId) {
+  if (isVerified) {
     try {
-      const report = await retrieveVerificationReport(lastReportId);
-      const dob = report.document?.dob;
+      const sensitiveSession = await retrieveSensitiveVerificationSession(session.id, {
+        expand: ['verified_outputs.dob', 'last_verification_report.document'],
+      });
+      const reportObject =
+        typeof sensitiveSession.last_verification_report === 'object'
+          ? sensitiveSession.last_verification_report
+          : null;
+      const dob = sensitiveSession.verified_outputs?.dob ?? reportObject?.document?.dob;
       if (dob?.day && dob?.month && dob?.year) {
         const dobIso = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`;
         updatePayload.date_of_birth = dobIso;
       }
     } catch (error) {
-      console.error('[identity/webhook] Failed to retrieve verification report for DOB', {
+      console.error('[identity/webhook] Failed to retrieve sensitive verification session for DOB', {
         profileId,
-        reportId: lastReportId,
+        sessionId: session.id,
         error,
       });
     }

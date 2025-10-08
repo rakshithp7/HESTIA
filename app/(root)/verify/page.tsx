@@ -11,6 +11,23 @@ import { profileNeedsVerification } from '@/lib/verification';
 
 const POLL_INTERVAL_MS = 5000;
 
+function getAgeFromDob(dob: string | null): number | null {
+  if (!dob) return null;
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) {
+    return null;
+  }
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+  if (!hasHadBirthdayThisYear) {
+    age -= 1;
+  }
+  return age >= 0 ? age : null;
+}
+
 export default function VerifyPage() {
   const router = useRouter();
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
@@ -133,6 +150,7 @@ export default function VerifyPage() {
   const needsVerification = profileNeedsVerification(profile);
   const currentStatus = profile?.verification_status ?? 'unverified';
   const attemptCount = profile?.verification_attempts ?? 0;
+  const verifiedAge = React.useMemo(() => getAgeFromDob(profile?.date_of_birth ?? null), [profile?.date_of_birth]);
 
   if (loading) {
     return (
@@ -153,7 +171,7 @@ export default function VerifyPage() {
               Try again
             </Button>
             <Button asChild>
-              <Link href="/sign-in">Sign in</Link>
+              <Link href="/connect">Sign in</Link>
             </Button>
           </div>
         </div>
@@ -163,7 +181,7 @@ export default function VerifyPage() {
 
   if (!needsVerification) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="screen-height flex items-center justify-center px-6">
         <div className="max-w-xl text-center space-y-6">
           <ShieldCheck className="mx-auto size-12 text-primary" />
           <div>
@@ -171,6 +189,9 @@ export default function VerifyPage() {
             <p className="mt-3 text-foreground">
               Thanks for completing identity verification. You can now access the Connect experience.
             </p>
+            {typeof verifiedAge === 'number' ? (
+              <p className="mt-2 text-sm text-muted-foreground">Age verified from ID: {verifiedAge}</p>
+            ) : null}
           </div>
           <div className="flex justify-center gap-4">
             <Button onClick={() => router.replace('/connect')}>Open Connect</Button>
@@ -216,7 +237,7 @@ export default function VerifyPage() {
             <p className="font-medium">What to expect</p>
             <ul className="list-disc list-inside text-sm text-foreground space-y-1">
               <li>Click “Start verification” to launch the secure Stripe Identity flow in a new tab.</li>
-              <li>Have a government-issued ID ready and be prepared to take a live selfie.</li>
+              <li>Have a government-issued ID ready.</li>
               <li>We’ll update your status automatically once Stripe completes the checks.</li>
             </ul>
           </div>

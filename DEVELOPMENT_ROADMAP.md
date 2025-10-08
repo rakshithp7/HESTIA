@@ -1,5 +1,13 @@
 ## Development Roadmap
 
+### Error & Fallback Pages
+
+- 2025-10-10: Added whimsical 404 experience
+
+  - Created cute firefly-inspired layout at `app/not-found.tsx` that keeps the brand palette and typography
+  - Included primary and secondary calls-to-action guiding visitors back to the home page or resources
+  - Updated hero treatment to render the provided dotLottie animation (`public/404-anim.lottie`) with the official React wrapper
+
 ### Identity Verification
 
 - 2025-09-18: Integrated Stripe Identity verification flow
@@ -10,7 +18,12 @@
   - Built `/verify` experience with session polling, status messaging, and retry handling; wired age verification page CTA
   - Updated auth-gate layout and Connect session page to enforce verification status and react to webhook-driven changes
   - Added reusable Stripe Identity flow support via `STRIPE_IDENTITY_FLOW_ID` env with provided email details for consistent configuration
-  - Persist Stripe-sourced date of birth to `profiles.date_of_birth` upon successful verification for future age gating
+- Persist Stripe-sourced date of birth to `profiles.date_of_birth` upon successful verification for future age gating
+- 2025-10-07: Hardened DOB persistence for Stripe Identity verifications
+
+  - Required new `STRIPE_IDENTITY_RESTRICTED_KEY` env and restricted Stripe client for sensitive lookups
+  - Webhook now re-fetches the session with `verified_outputs.dob` expansion to reliably store DOB in `profiles`
+  - Verified UI surfaces “Age verified from ID” with derived age when DOB is stored
 
 ### WebRTC Voice Implementation
 

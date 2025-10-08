@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import { serverEnv } from '@/lib/env/server';
 
 const stripeClient = new Stripe(serverEnv.STRIPE_SECRET_KEY);
+const restrictedStripeClient = new Stripe(serverEnv.STRIPE_IDENTITY_RESTRICTED_KEY);
 
 export type CreateVerificationSessionParams = {
   profileId: string;
@@ -50,4 +51,11 @@ export async function retrieveVerificationReport(
   verificationReportId: string
 ): Promise<Stripe.Identity.VerificationReport> {
   return stripeClient.identity.verificationReports.retrieve(verificationReportId);
+}
+
+export async function retrieveSensitiveVerificationSession(
+  verificationSessionId: string,
+  params: Stripe.Identity.VerificationSessionRetrieveParams
+): Promise<Stripe.Identity.VerificationSession> {
+  return restrictedStripeClient.identity.verificationSessions.retrieve(verificationSessionId, params);
 }
