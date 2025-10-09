@@ -1,5 +1,13 @@
 ## Development Roadmap
 
+### Documentation & Onboarding
+
+- 2025-10-12: Refreshed repository README for onboarding
+
+  - Added branded logo header and concise project description
+  - Documented core features, architecture highlights, and required environment variables
+  - Standardised setup instructions around `pnpm` and noted Supabase/Netlify deployment considerations
+
 ### Error & Fallback Pages
 
 - 2025-10-10: Added whimsical 404 experience
