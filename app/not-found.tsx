@@ -8,10 +8,11 @@ import { useTheme } from '@/components/theme-provider';
 export default function NotFound() {
   const { theme } = useTheme();
 
-  const animationSrc =
-    theme === 'dark'
-      ? 'https://lottie.host/6b15ec54-ed7f-4403-b465-ce2446497b19/xaCN3TDHzb.lottie'
-      : 'https://lottie.host/69d9dd64-a9bd-40fe-b9ac-0e359eb4f438/GsrMFFEmZh.lottie';
+  // const animationSrc =
+  //   theme === 'dark'
+  //     ? 'https://lottie.host/6b15ec54-ed7f-4403-b465-ce2446497b19/xaCN3TDHzb.lottie'
+  //     : 'https://lottie.host/69d9dd64-a9bd-40fe-b9ac-0e359eb4f438/GsrMFFEmZh.lottie';
+  const animationSrc = theme === 'dark' ? '/404-error-page-dark.lottie' : '/404-error-page-light.lottie';
 
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">

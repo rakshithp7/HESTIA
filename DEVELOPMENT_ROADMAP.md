@@ -26,6 +26,7 @@
   - Built `/verify` experience with session polling, status messaging, and retry handling; wired age verification page CTA
   - Updated auth-gate layout and Connect session page to enforce verification status and react to webhook-driven changes
   - Added reusable Stripe Identity flow support via `STRIPE_IDENTITY_FLOW_ID` env with provided email details for consistent configuration
+
 - Persist Stripe-sourced date of birth to `profiles.date_of_birth` upon successful verification for future age gating
 - 2025-10-07: Hardened DOB persistence for Stripe Identity verifications
 
