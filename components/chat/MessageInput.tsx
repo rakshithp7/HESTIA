@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => boolean;
@@ -85,13 +86,15 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disab
             className="flex-1 bg-transparent outline-none"
             disabled={disabled}
           />
-          <button
+          <Button
             type="submit"
             disabled={!inputValue.trim() || disabled}
+            variant="ghost"
+            size="icon"
             className="opacity-80 disabled:opacity-40"
             aria-label="Send">
             ➤
-          </button>
+          </Button>
         </div>
       </form>
     </div>

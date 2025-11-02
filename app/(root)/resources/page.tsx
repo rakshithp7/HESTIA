@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import { Search } from 'lucide-react';
-import React, { useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import type { ResourceSection } from '@/data/resources';
 import { SECTIONS } from '@/data/resources';
 
@@ -23,7 +23,7 @@ function highlightText(text: string, query: string): React.ReactNode {
       </mark>
     ) : (
       <span key={`${part}-${index}`}>{part}</span>
-    ),
+    )
   );
 }
 
@@ -54,7 +54,6 @@ function SectionDetails({ section, highlightQuery }: { section: ResourceSection;
 export default function ResourcesPage() {
   const [selectedId, setSelectedId] = useState<string>('hotlines');
   const [query, setQuery] = useState('');
-  const [isPending, startTransition] = useTransition();
   const [accordionValue, setAccordionValue] = useState<string | undefined>('hotlines');
 
   const trimmedQuery = query.trim();
@@ -69,7 +68,7 @@ export default function ResourcesPage() {
       const entries = titleMatches
         ? section.entries // Include all entries if title matches
         : section.entries.filter((entry) =>
-            [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery)),
+            [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery))
           );
       return { ...section, entries };
     }).filter((section) => {
@@ -81,7 +80,10 @@ export default function ResourcesPage() {
 
   const selectedSection = useMemo<ResourceSection | undefined>(() => {
     if (queryActive) return undefined;
-    return filteredSections.find((section) => section.id === selectedId) ?? SECTIONS.find((section) => section.id === selectedId);
+    return (
+      filteredSections.find((section) => section.id === selectedId) ??
+      SECTIONS.find((section) => section.id === selectedId)
+    );
   }, [filteredSections, queryActive, selectedId]);
 
   useEffect(() => {
@@ -93,9 +95,7 @@ export default function ResourcesPage() {
   }, [filteredSections, queryActive, selectedId]);
 
   const handleQueryChange = (value: string) => {
-    startTransition(() => {
-      setQuery(value);
-    });
+    setQuery(value);
   };
 
   return (
@@ -112,15 +112,6 @@ export default function ResourcesPage() {
               aria-label="Search resources"
               className="w-32 md:w-64 pl-9 pr-10 text-base h-10"
             />
-            {isPending && (
-              <Image
-                src="/loading.gif"
-                alt="Loading search results"
-                width={16}
-                height={16}
-                className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"
-              />
-            )}
           </div>
         </div>
 
@@ -130,16 +121,17 @@ export default function ResourcesPage() {
             <ul className="space-y-3" role="list">
               {SECTIONS.map((s) => (
                 <li key={s.id}>
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
                     onClick={() => setSelectedId(s.id)}
                     aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
                     disabled={queryActive}
-                    className={`text-left inline-block hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${
+                    className={`text-left justify-start px-0 h-auto hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${
                       selectedId === s.id && !queryActive ? 'text-primary underline' : ''
                     }`}>
                     {s.title}
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -192,9 +184,7 @@ export default function ResourcesPage() {
                       ) : (
                         section.entries.map((e) => (
                           <div key={e.name} className="space-y-2">
-                            <h3 className="text-base font-semibold">
-                              {highlightText(e.name, highlightQuery)}
-                            </h3>
+                            <h3 className="text-base font-semibold">{highlightText(e.name, highlightQuery)}</h3>
                             {e.lines.map((line, i) => (
                               <p key={i} className="text-sm leading-relaxed">
                                 {highlightText(line, highlightQuery)}

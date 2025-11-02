@@ -2,23 +2,23 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { Profile } from '@/lib/supabase/types';
+import { getVerifiedUser } from '@/lib/supabase/auth-utils';
+import { getUserById } from '@/lib/supabase/profile-service';
 
 export default async function AgeVerificationPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+
+  const user = await getVerifiedUser(supabase, 'age-verification');
 
   let profile: Profile | null = null;
 
-  if (session?.user) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle<Profile>();
-    if (!error) {
+  if (user) {
+    const { data, error } = await getUserById(supabase, user.id);
+
+    if (!error && data) {
       profile = data;
+    } else if (error) {
+      console.error('[age-verification] Failed to load profile', error);
     }
   }
 

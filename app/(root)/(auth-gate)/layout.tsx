@@ -2,24 +2,20 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { AuthForms } from '@/components/AuthForms';
-import type { Profile } from '@/lib/supabase/types';
 import { profileNeedsVerification } from '@/lib/verification';
+import { getVerifiedUser } from '@/lib/supabase/auth-utils';
+import { getUserById } from '@/lib/supabase/profile-service';
 
 export default async function AuthGateLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
 
-  if (!session) {
+  const user = await getVerifiedUser(supabase, 'auth-gate');
+
+  if (!user) {
     return <AuthForms initialMode="signIn" />;
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single<Profile>();
+  const { data: profile, error: profileError } = await getUserById(supabase, user.id);
 
   if (profileError) {
     console.error('[auth-gate] Failed to load profile', profileError);

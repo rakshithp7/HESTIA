@@ -89,17 +89,18 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
                   const isActive = activeSection === item.id;
                   return (
                     <li key={item.id}>
-                      <button
+                      <Button
+                        variant="ghost"
                         type="button"
                         onClick={() => setActiveSection(item.id)}
                         className={cn(
-                          'w-full rounded-lg px-3 py-2 text-sm font-semibold transition-all text-left',
+                          'w-full justify-start rounded-lg px-3 py-2 text-sm font-semibold transition-all text-left',
                           isActive
                             ? 'bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-border/60'
-                            : 'text-foreground/70 hover:bg-background/60 hover:text-foreground'
+                            : 'text-foreground/70 hover:bg-background hover:text-foreground'
                         )}>
                         {item.label}
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}

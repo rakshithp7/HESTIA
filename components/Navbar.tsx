@@ -6,6 +6,8 @@ import { ThemeToggle } from './theme-toggle';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { getVerifiedUser } from '@/lib/supabase/auth-utils';
 import UserAvatar from './UserAvatar';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
@@ -27,19 +29,30 @@ const Navbar = () => {
 
   useEffect(() => {
     let isMounted = true;
-    (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (isMounted) {
-        setIsAuthed(!!session);
-        setInitials(extractInitials(session?.user?.user_metadata, session?.user?.email));
+
+    async function refreshUser() {
+      const user = await getVerifiedUser(supabase, 'navbar');
+
+      if (!isMounted) {
+        return;
       }
-    })();
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthed(!!session);
-      setInitials(extractInitials(session?.user?.user_metadata, session?.user?.email));
+
+      if (!user) {
+        setIsAuthed(false);
+        setInitials('U');
+        return;
+      }
+
+      setIsAuthed(true);
+      setInitials(extractInitials(user.user_metadata as Record<string, unknown> | undefined, user.email ?? null));
+    }
+
+    void refreshUser();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      void refreshUser();
     });
+
     return () => {
       isMounted = false;
       sub.subscription.unsubscribe();
@@ -108,11 +121,17 @@ const Navbar = () => {
         {/* Mobile controls (right aligned) */}
         <div className="md:hidden flex items-center gap-4 ml-auto">
           <ThemeToggle />
-          <button className="flex items-center" onClick={() => setOpen((v) => !v)} aria-label="Open menu">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 p-0 flex items-center justify-center"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Open menu">
             <svg width={28} height={28} fill="none" stroke="currentColor" strokeWidth={2}>
               <path d="M4 7h20M4 14h20M4 21h20" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
       {/* Mobile menu absolutely positioned with transition */}
@@ -156,12 +175,13 @@ const Navbar = () => {
           {isAuthed ? (
             <>
               <div className="flex items-center justify-center py-2">
-                <button
+                <Button
+                  type="button"
                   onClick={() => setMenuOpen((v) => !v)}
                   aria-label="User menu"
-                  className="size-10 rounded-full bg-foreground text-background font-bold flex items-center justify-center">
+                  className="size-10 rounded-full bg-foreground text-background font-bold flex items-center justify-center hover:bg-foreground/90 p-0">
                   {initials}
-                </button>
+                </Button>
               </div>
               {menuOpen ? (
                 <>
@@ -174,7 +194,9 @@ const Navbar = () => {
                     }}>
                     Profile
                   </Link>
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => {
                       setOpen(false);
                       setMenuOpen(false);
@@ -182,7 +204,7 @@ const Navbar = () => {
                     }}
                     className="text-lg tracking-widest hover:underline w-full text-center">
                     Sign out
-                  </button>
+                  </Button>
                 </>
               ) : null}
             </>

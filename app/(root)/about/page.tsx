@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 import type { FAQItem, FAQItemId } from '@/data/faq';
 import { FAQ_ITEMS } from '@/data/faq';
 
@@ -52,14 +53,15 @@ export default function AboutPage() {
               <ul className="space-y-3 text-lg">
                 {FAQ_ITEMS.map((faq) => (
                   <li key={faq.id}>
-                    <button
+                    <Button
+                      variant="link"
                       type="button"
                       onClick={() => setSelectedFaq(faq.id)}
-                      className={`text-left underline-offset-4 hover:underline outline-none ${
+                      className={`text-left justify-start px-0 h-auto underline-offset-4 hover:underline outline-none ${
                         selectedFaq === faq.id ? 'text-primary underline' : ''
                       }`}>
                       {faq.question}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

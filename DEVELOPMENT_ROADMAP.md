@@ -113,6 +113,14 @@
 - Helpers added: `lib/supabase/client.ts`, `lib/supabase/server.ts`
 - `(full)` routes protected in `app/(full)/layout.tsx`
 - Navbar shows `SIGN OUT` when authenticated; hides `SIGN IN/SIGN UP`
+- 2025-10-14: Hardened Supabase auth session handling
+  - Replaced `auth.getSession()` usage with server-verified `auth.getUser()` across navbar, auth-gate layout, profile, and age verification flows
+  - Client auth listener now re-fetches the authenticated user on state changes to avoid trusting storage-backed session payloads
+  - Added graceful handling for missing-session responses so anonymous visitors no longer trigger `AuthSessionMissingError` noise in logs or UI
+  - Introduced shared `getUserById` helper in `lib/supabase/profile-service.ts` to reuse the profiles lookup across surfaces
+  - Replaced ad-hoc `<button>` elements with the shared shadcn `Button` component for consistent styling and accessibility
+  - Simplified resources search UI by removing the temporary loading overlay once local filtering proved fast enough
+  - Consolidated shared auth helpers into `lib/supabase/auth-utils.ts` to keep validation and logging logic DRY
 
 ### Database & Profiles
 

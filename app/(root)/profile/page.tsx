@@ -3,24 +3,25 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { AuthForms } from '@/components/AuthForms';
 import type { Profile } from '@/lib/supabase/types';
 import ProfileClient from './profile-client';
+import { getVerifiedUser } from '@/lib/supabase/auth-utils';
+import { getUserById } from '@/lib/supabase/profile-service';
 
 export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
 
-  if (!session) {
+  const user = await getVerifiedUser(supabase, 'profile');
+
+  if (!user) {
     return <AuthForms initialMode="signIn" />;
   }
 
   let profile: Pick<Profile, 'first_name' | 'last_name'> | null = null;
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('first_name,last_name')
-    .eq('id', session.user.id)
-    .maybeSingle<Pick<Profile, 'first_name' | 'last_name'>>();
+  const { data, error } = await getUserById<Pick<Profile, 'first_name' | 'last_name'>>(
+    supabase,
+    user.id,
+    'first_name,last_name'
+  );
 
   if (!error && data) {
     profile = data;
@@ -30,7 +31,7 @@ export default async function ProfilePage() {
 
   return (
     <ProfileClient
-      email={session.user.email ?? ''}
+      email={user.email ?? ''}
       firstName={profile?.first_name ?? null}
       lastName={profile?.last_name ?? null}
     />

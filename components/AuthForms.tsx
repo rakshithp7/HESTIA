@@ -235,9 +235,10 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
 
             <div className="text-center text-sm">
               Already have an account?{' '}
-              <button
+              <Button
                 type="button"
-                className="underline-offset-4 underline hover:cursor-pointer"
+                variant="link"
+                className="underline-offset-4 px-0 h-auto"
                 onClick={() => {
                   setMode('signIn');
                   setError(null);
@@ -250,7 +251,7 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
                   setResendLoading(false);
                 }}>
                 Sign in
-              </button>
+              </Button>
             </div>
           </form>
         ) : (
@@ -366,9 +367,10 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
 
             <div className="text-center text-sm">
               New here?{' '}
-              <button
+              <Button
                 type="button"
-                className="underline-offset-4 underline hover:cursor-pointer"
+                variant="link"
+                className="underline-offset-4 px-0 h-auto"
                 onClick={() => {
                   setMode('signUp');
                   setError(null);
@@ -382,7 +384,7 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
                   setResendLoading(false);
                 }}>
                 Create an account
-              </button>
+              </Button>
             </div>
           </form>
         )}
