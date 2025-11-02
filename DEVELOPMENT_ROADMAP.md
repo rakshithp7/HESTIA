@@ -152,12 +152,31 @@
     - Added "no results found" message when search yields no matches
     - Auto-expand first section with results when searching
     - Improved mobile UX by hiding irrelevant sections
-  - 2025-09-17: Enhanced search to include section titles
-    - Section titles are now searchable and matching titles show entire section
-    - If section title matches query, all entries in that section are displayed
-    - Improved search relevance and discoverability
-  - 2025-09-17: Added mobile accordion layout to About page
-    - Desktop: maintains existing two-column layout (sidebar + content)
+- 2025-09-17: Enhanced search to include section titles
+  - Section titles are now searchable and matching titles show entire section
+  - If section title matches query, all entries in that section are displayed
+  - Improved search relevance and discoverability
+- 2025-10-13: Expanded resources search UX
+  - Desktop search now surfaces matches from every section within the main results column
+  - Preserved sidebar navigation while rendering multi-section hits inline to improve discovery
+  - Added asynchronous loading affordance for future API-backed searches
+- 2025-10-13: Polished resources search interaction
+  - Removed visual selection from sidebar while searching to avoid conflicting state
+  - Auto-expands matching accordion panels on mobile for quicker scanning
+  - Highlighted query text across section titles, entries, and descriptions
+- 2025-10-13: Centralized resources data
+  - Extracted static resources content into `data/resources.ts` for reuse
+  - Keeps page component focused on presentation and interaction logic
+- 2025-10-13: Centralized FAQ content
+  - Moved About page FAQ items into `data/faq.ts` with shared types
+  - Simplifies page and enables reuse across other surfaces
+  - Stored FAQ copy as plain data (no JSX) to keep presentation logic within components
+- 2025-10-13: Added profile management page
+  - `/profile` offers password updates and embedded verification status panel
+  - Avatar dropdown now links to the profile workspace on desktop and mobile
+  - Shared verification hook/component powers both `/verify` and profile experiences
+- 2025-09-17: Added mobile accordion layout to About page
+  - Desktop: maintains existing two-column layout (sidebar + content)
     - Mobile: uses accordion where FAQ questions expand to show content
     - Consistent with Resources page mobile experience
     - Smooth expand/collapse animations using shadcn accordion component

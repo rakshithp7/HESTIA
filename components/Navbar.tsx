@@ -164,15 +164,26 @@ const Navbar = () => {
                 </button>
               </div>
               {menuOpen ? (
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    setMenuOpen(false);
-                    handleSignOut();
-                  }}
-                  className="text-lg tracking-widest hover:underline w-full text-center">
-                  Sign out
-                </button>
+                <>
+                  <Link
+                    href="/profile"
+                    className="text-lg tracking-widest hover:underline w-full text-center"
+                    onClick={() => {
+                      setOpen(false);
+                      setMenuOpen(false);
+                    }}>
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      setMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="text-lg tracking-widest hover:underline w-full text-center">
+                    Sign out
+                  </button>
+                </>
               ) : null}
             </>
           ) : null}

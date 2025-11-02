@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -36,15 +38,15 @@ export default function UpdatePasswordPage() {
         <h1 className="text-center text-5xl md:text-6xl tracking-widest uppercase mb-10">SET NEW PASSWORD</h1>
         <form className="mx-auto w-full max-w-xl space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-lg tracking-wide">
+            <Label htmlFor="password" className="text-lg tracking-wide">
               New password
-            </label>
-            <input
+            </Label>
+            <Input
               id="password"
               name="password"
               type="password"
               placeholder="Enter a new password"
-              className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="px-4 py-2 text-base"
               required
             />
           </div>

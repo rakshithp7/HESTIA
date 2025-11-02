@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -29,6 +30,9 @@ export default function UserAvatar({ initials, onSignOut, className }: UserAvata
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
+        <DropdownMenuItem asChild>
+          <Link href="/profile">Profile</Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onSignOut()}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

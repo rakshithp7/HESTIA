@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Phone, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -24,10 +25,10 @@ export default function ConnectPage() {
     <div className="px-6 py-0 md:py-8 md:px-12">
       <div className="mx-auto max-w-xl mt-24 text-center space-y-8">
         <h2 className="text-2xl md:text-4xl mb-8">What’s on your mind?</h2>
-        <input
+        <Input
           type="text"
           placeholder="Type here..."
-          className="w-3/4 rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="w-3/4 px-4 py-2 text-base"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
         />

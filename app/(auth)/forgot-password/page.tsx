@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
@@ -39,16 +41,16 @@ export default function ForgotPasswordPage() {
 
         <form className="mx-auto w-full max-w-xl space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-lg tracking-wide">
+            <Label htmlFor="email" className="text-lg tracking-wide">
               Email
-            </label>
-            <input
+            </Label>
+            <Input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
               placeholder="Enter your email"
-              className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="px-4 py-2 text-base"
               required
             />
           </div>

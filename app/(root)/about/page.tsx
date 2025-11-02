@@ -1,59 +1,32 @@
 'use client';
 import React, { useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import type { FAQItem, FAQItemId } from '@/data/faq';
+import { FAQ_ITEMS } from '@/data/faq';
 
-type FAQItem = {
-  id: 'how' | 'who' | 'why';
-  question: string;
-  content: React.ReactNode;
-};
-
-const FAQ_ITEMS: FAQItem[] = [
-  {
-    id: 'how',
-    question: 'How does Hestia Work?',
-    content: (
-      <div>
-        <h4 className="text-2xl md:text-3xl mb-2">How Does Hestia Work?</h4>
+function FaqContent({ faq }: { faq: FAQItem }) {
+  return (
+    <div className="space-y-4">
+      <h4 className="text-2xl md:text-3xl mb-2">{faq.heading}</h4>
+      {faq.paragraphs?.map((text, index) => (
+        <p key={index} className="text-lg leading-relaxed">
+          {text}
+        </p>
+      ))}
+      {faq.bullets && (
         <ul className="list-disc pl-6 space-y-2 text-lg">
-          <li>Age Matching</li>
-          <li>Conversation Topic Matching</li>
-          <li>Anonymity</li>
-          <li>Text-based versus Voice-based Chat</li>
+          {faq.bullets.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
-      </div>
-    ),
-  },
-  {
-    id: 'who',
-    question: 'Who is Hestia for?',
-    content: (
-      <div>
-        <h4 className="text-2xl md:text-3xl mb-2">Who is Hestia for?</h4>
-        <p className="text-lg leading-relaxed">
-          Hestia is for anyone seeking a safe, anonymous space to connect with others by age group and shared interests.
-          Whether you want to talk, listen, or simply feel less alone, you are welcome here.
-        </p>
-      </div>
-    ),
-  },
-  {
-    id: 'why',
-    question: 'Why Hestia?',
-    content: (
-      <div>
-        <h4 className="text-2xl md:text-3xl mb-2">Why Hestia?</h4>
-        <p className="text-lg leading-relaxed">
-          Because compassionate, judgment-free conversations matter. Hestia prioritizes privacy, simplicity, and
-          meaningful human connection without pressure, costs, or complexities.
-        </p>
-      </div>
-    ),
-  },
-];
+      )}
+    </div>
+  );
+}
 
 export default function AboutPage() {
-  const [selectedFaq, setSelectedFaq] = useState<'how' | 'who' | 'why'>('how');
+  const [selectedFaq, setSelectedFaq] = useState<FAQItemId>('how');
+  const activeFaq = FAQ_ITEMS.find((faq) => faq.id === selectedFaq);
   return (
     <div>
       {/* Hero section */}
@@ -92,7 +65,7 @@ export default function AboutPage() {
               </ul>
             </div>
             <div className="md:col-span-2">
-              <div className="space-y-6">{FAQ_ITEMS.find((faq) => faq.id === selectedFaq)?.content}</div>
+              <div className="space-y-6">{activeFaq && <FaqContent faq={activeFaq} />}</div>
             </div>
           </div>
 
@@ -105,7 +78,9 @@ export default function AboutPage() {
                     <span className="text-lg font-medium">{faq.question}</span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="pt-2">{faq.content}</div>
+                    <div className="pt-2">
+                      <FaqContent faq={faq} />
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               ))}

@@ -1,91 +1,102 @@
 'use client';
 
+import Image from 'next/image';
 import { Search } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Input } from '@/components/ui/input';
+import type { ResourceSection } from '@/data/resources';
+import { SECTIONS } from '@/data/resources';
 
-type ResourceEntry = { name: string; lines: string[] };
-type ResourceSection = { id: string; title: string; entries: ResourceEntry[] };
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-const SECTIONS: ResourceSection[] = [
-  {
-    id: 'hotlines',
-    title: 'Crisis and Emergency Support Hotlines',
-    entries: [
-      {
-        name: '988 Suicide and Crisis Lifeline',
-        lines: [
-          '24/7 service to call, text, or chat with a counselor for immediate support',
-          'https://988lifeline.org/',
-          'call or text: 988',
-        ],
-      },
-      {
-        name: 'Crisis Text Line',
-        lines: [
-          '24/7 service to text with a trained volunteer crisis counselor',
-          'https://www.crisistextline.org/',
-          'text “HOME” or “HOLA” to: 741-741',
-        ],
-      },
-      {
-        name: 'The Trevor Project',
-        lines: [
-          '24/7 service offering emergency support services for LGBTQIA+ youth',
-          'https://www.thetrevorproject.org/',
-          'call: 1-866-488-7386',
-          'text “START” to: 678-678',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'cbt',
-    title: 'Guided Cognitive Behavioral Therapy (CBT)',
-    entries: [
-      {
-        name: 'TherapistAid',
-        lines: [
-          'Research-informed catalog of CBT worksheets, interactive tools, and educational resources created by mental health professionals and organized by topic',
-          'https://www.therapistaid.com/',
-        ],
-      },
-      {
-        name: 'Moodgym',
-        lines: [
-          'Interactive and accredited self-help program to prevent and manage symptoms of anxiety and depression using CBT methods, developed by researchers at the Australian National University',
-          'https://www.moodgym.com.au/',
-        ],
-      },
-    ],
-  },
-  { id: 'mood', title: 'Mood Trackers and Mindfulness Tools', entries: [] },
-  { id: 'groups', title: 'Support Groups', entries: [] },
-];
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text;
+  const regex = new RegExp(`(${escapeRegExp(query)})`, 'ig');
+  const parts = text.split(regex);
+  return parts.map((part, index) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark key={`${part}-${index}`} className="rounded-sm bg-yellow-200 px-1 text-inherit dark:bg-yellow-500/60">
+        {part}
+      </mark>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    ),
+  );
+}
+
+function SectionDetails({ section, highlightQuery }: { section: ResourceSection; highlightQuery: string }) {
+  return (
+    <div>
+      <h2 className="text-xl md:text-2xl mb-2">{highlightText(section.title, highlightQuery)}</h2>
+      <div className="space-y-4">
+        {section.entries.length === 0 ? (
+          <p className="text-sm">Coming soon.</p>
+        ) : (
+          section.entries.map((entry) => (
+            <div key={entry.name}>
+              <h3 className="text-lg font-semibold">{highlightText(entry.name, highlightQuery)}</h3>
+              {entry.lines.map((line, index) => (
+                <p key={index} className="text-sm">
+                  {highlightText(line, highlightQuery)}
+                </p>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ResourcesPage() {
   const [selectedId, setSelectedId] = useState<string>('hotlines');
   const [query, setQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const [accordionValue, setAccordionValue] = useState<string | undefined>('hotlines');
+
+  const trimmedQuery = query.trim();
+  const normalizedQuery = trimmedQuery.toLowerCase();
+  const queryActive = normalizedQuery.length > 0;
+  const highlightQuery = queryActive ? trimmedQuery : '';
 
   const filteredSections = useMemo<ResourceSection[]>(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return SECTIONS;
+    if (!queryActive) return SECTIONS;
     return SECTIONS.map((section) => {
-      const titleMatches = section.title.toLowerCase().includes(q);
+      const titleMatches = section.title.toLowerCase().includes(normalizedQuery);
       const entries = titleMatches
         ? section.entries // Include all entries if title matches
-        : section.entries.filter((e) => [e.name, ...e.lines].some((t) => t.toLowerCase().includes(q)));
+        : section.entries.filter((entry) =>
+            [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery)),
+          );
       return { ...section, entries };
     }).filter((section) => {
       // Keep section if title matches OR if it has matching entries
-      const titleMatches = section.title.toLowerCase().includes(q);
+      const titleMatches = section.title.toLowerCase().includes(normalizedQuery);
       return titleMatches || section.entries.length > 0;
     });
-  }, [query]);
+  }, [normalizedQuery, queryActive]);
 
   const selectedSection = useMemo<ResourceSection | undefined>(() => {
-    return filteredSections.find((s) => s.id === selectedId) ?? SECTIONS.find((s) => s.id === selectedId);
-  }, [filteredSections, selectedId]);
+    if (queryActive) return undefined;
+    return filteredSections.find((section) => section.id === selectedId) ?? SECTIONS.find((section) => section.id === selectedId);
+  }, [filteredSections, queryActive, selectedId]);
+
+  useEffect(() => {
+    if (queryActive) {
+      setAccordionValue(filteredSections[0]?.id);
+    } else {
+      setAccordionValue(selectedId);
+    }
+  }, [filteredSections, queryActive, selectedId]);
+
+  const handleQueryChange = (value: string) => {
+    startTransition(() => {
+      setQuery(value);
+    });
+  };
 
   return (
     <div className="px-6 py-8 md:px-12">
@@ -94,13 +105,22 @@ export default function ResourcesPage() {
           <h1 className="text-3xl md:text-4xl mb-4">Resources</h1>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <input
+            <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => handleQueryChange(event.target.value)}
               placeholder="search..."
               aria-label="Search resources"
-              className="w-32 md:w-64 rounded-xl border border-border bg-input pl-9 pr-3 py-1 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="w-32 md:w-64 pl-9 pr-10 text-base h-10"
             />
+            {isPending && (
+              <Image
+                src="/loading.gif"
+                alt="Loading search results"
+                width={16}
+                height={16}
+                className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"
+              />
+            )}
           </div>
         </div>
 
@@ -113,9 +133,10 @@ export default function ResourcesPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedId(s.id)}
-                    aria-current={selectedId === s.id ? 'true' : undefined}
-                    className={`text-left inline-block hover:underline underline-offset-4 ${
-                      selectedId === s.id ? 'text-primary underline' : ''
+                    aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
+                    disabled={queryActive}
+                    className={`text-left inline-block hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${
+                      selectedId === s.id && !queryActive ? 'text-primary underline' : ''
                     }`}>
                     {s.title}
                   </button>
@@ -125,46 +146,44 @@ export default function ResourcesPage() {
           </aside>
 
           <section className="md:col-span-2 space-y-8 pr-2">
-            {selectedSection && (
-              <div>
-                <h2 className="text-xl md:text-2xl mb-2">{selectedSection.title}</h2>
-                <div className="space-y-4">
-                  {selectedSection.entries.length === 0 ? (
-                    <p className="text-sm">Coming soon.</p>
-                  ) : (
-                    selectedSection.entries.map((e) => (
-                      <div key={e.name}>
-                        <h3 className="text-lg font-semibold">{e.name}</h3>
-                        {e.lines.map((line, i) => (
-                          <p key={i} className="text-sm">
-                            {line}
-                          </p>
-                        ))}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+            {queryActive ? (
+              filteredSections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No resources found matching &quot;{trimmedQuery}&quot;.
+                </p>
+              ) : (
+                filteredSections.map((section) => (
+                  <SectionDetails key={section.id} section={section} highlightQuery={highlightQuery} />
+                ))
+              )
+            ) : (
+              selectedSection && <SectionDetails section={selectedSection} highlightQuery={highlightQuery} />
             )}
           </section>
         </div>
 
         {/* Mobile Layout - Accordion */}
         <div className="md:hidden">
-          {filteredSections.length === 0 && query.trim() ? (
+          {filteredSections.length === 0 && queryActive ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No resources found matching &quot;{query}&quot;</p>
+              <p className="text-muted-foreground">No resources found matching &quot;{trimmedQuery}&quot;</p>
             </div>
           ) : (
             <Accordion
               type="single"
               collapsible
               className="w-full"
-              defaultValue={query.trim() && filteredSections.length > 0 ? filteredSections[0].id : undefined}>
+              value={accordionValue}
+              onValueChange={(value) => {
+                setAccordionValue(value);
+                if (value) {
+                  setSelectedId(value);
+                }
+              }}>
               {filteredSections.map((section) => (
                 <AccordionItem key={section.id} value={section.id}>
                   <AccordionTrigger className="text-left">
-                    <span className="text-lg font-medium">{section.title}</span>
+                    <span className="text-lg font-medium">{highlightText(section.title, highlightQuery)}</span>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pt-2">
@@ -173,10 +192,12 @@ export default function ResourcesPage() {
                       ) : (
                         section.entries.map((e) => (
                           <div key={e.name} className="space-y-2">
-                            <h3 className="text-base font-semibold">{e.name}</h3>
+                            <h3 className="text-base font-semibold">
+                              {highlightText(e.name, highlightQuery)}
+                            </h3>
                             {e.lines.map((line, i) => (
                               <p key={i} className="text-sm leading-relaxed">
-                                {line}
+                                {highlightText(line, highlightQuery)}
                               </p>
                             ))}
                           </div>

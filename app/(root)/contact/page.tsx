@@ -4,6 +4,9 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function ContactPage() {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,42 +27,42 @@ export default function ContactPage() {
         <div className="w-full md:max-w-lg md:justify-self-center">
           <form onSubmit={onSubmit} className="space-y-4 w-full">
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-base">
+              <Label htmlFor="name" className="text-base">
                 Name
-              </label>
-              <input
+              </Label>
+              <Input
                 id="name"
                 name="name"
                 type="text"
                 placeholder="Enter your name"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2 text-base"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-base">
+              <Label htmlFor="email" className="text-base">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 placeholder="Enter your email"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2 text-base"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="message" className="block text-base">
+              <Label htmlFor="message" className="text-base">
                 Message<span aria-hidden="true">*</span>
-              </label>
-              <textarea
+              </Label>
+              <Textarea
                 id="message"
                 name="message"
                 rows={5}
                 required
                 placeholder="Type your message"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2 text-base"
               />
             </div>
 

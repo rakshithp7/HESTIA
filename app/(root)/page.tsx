@@ -17,12 +17,12 @@ export default function HomePage() {
             className="object-contain md:m-auto w-[150px] md:w-[200px] drop-shadow-[1px_1px_1px_#236971] dark:drop-shadow-none"
           />
         </div>
-        <div className="text-center">
+        <div className="text-center flex flex-col gap-2">
           <h1 className="text-[6rem] md:text-[12rem] tracking-wider m-0 leading-none font-difont -mb-8 md:-mb-16 -mt-4 md:mt-12">
             HESTIA
           </h1>
           <p className="text-xl md:text-3xl my-4 md:my-8">Creating a safe space for all, founded on connection.</p>
-          <div className="flex justify-center gap-8">
+          <div className="flex justify-center gap-4 md:gap-8">
             <Button asChild className="text-base font-bold md:text-lg">
               <Link href="/connect">Connect to chat</Link>
             </Button>

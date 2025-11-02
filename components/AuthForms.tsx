@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const RESEND_COOLDOWNS = [60, 120, 300, 600];
 
@@ -166,61 +168,61 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
           <form key="signUp" className="mx-auto w-full max-w-xl space-y-6" onSubmit={onSignUp}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="firstName" className="block text-lg tracking-wide">
+                <Label htmlFor="firstName" className="text-base tracking-wide">
                   First Name
-                </label>
-                <input
+                </Label>
+                <Input
                   id="firstName"
                   name="firstName"
                   type="text"
                   autoComplete="given-name"
                   placeholder="Enter your first name"
-                  className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="px-4 py-2"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="lastName" className="block text-lg tracking-wide">
+                <Label htmlFor="lastName" className="text-base tracking-wide">
                   Last Name
-                </label>
-                <input
+                </Label>
+                <Input
                   id="lastName"
                   name="lastName"
                   type="text"
                   autoComplete="family-name"
                   placeholder="Enter your last name"
-                  className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="px-4 py-2"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-lg tracking-wide">
+              <Label htmlFor="email" className="text-base tracking-wide">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 placeholder="Enter your email"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-lg tracking-wide">
+              <Label htmlFor="password" className="text-base tracking-wide">
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="new-password"
                 placeholder="Create a password"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2"
                 required
               />
             </div>
@@ -254,31 +256,31 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
         ) : (
           <form key="signIn" className="mx-auto w-full max-w-xl space-y-6" onSubmit={onSignIn}>
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-lg tracking-wide">
+              <Label htmlFor="email" className="text-base tracking-wide">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 placeholder="Enter your email"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-lg tracking-wide">
+              <Label htmlFor="password" className="text-base tracking-wide">
                 Password
-              </label>
-              <input
+              </Label>
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                className="w-full rounded-md border border-border bg-input px-4 py-2 text-base outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="px-4 py-2"
                 required
               />
               <Link href="/forgot-password" className="text-base underline-offset-4 hover:underline">
