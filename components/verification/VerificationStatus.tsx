@@ -114,9 +114,6 @@ export function VerificationStatus({ variant = 'embedded' }: VerificationStatusP
               <Button size="sm" onClick={() => router.replace('/connect')}>
                 Open Connect
               </Button>
-              <Button size="sm" variant="outline" onClick={() => router.replace('/')}>
-                Go home
-              </Button>
             </div>
           </div>
         </div>

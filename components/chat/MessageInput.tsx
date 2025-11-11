@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => boolean;
@@ -79,11 +80,11 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disab
           className={`flex items-center gap-2 rounded-full border px-5 py-3 ${
             sendError ? 'border-destructive bg-destructive/5' : 'bg-input'
           }`}>
-          <input
+          <Input
             value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={disabled ? 'Connecting...' : 'Your message here...'}
-            className="flex-1 bg-transparent outline-none"
+            className="flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             disabled={disabled}
           />
           <Button

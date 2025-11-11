@@ -36,6 +36,11 @@
 
 ### WebRTC Voice Implementation
 
+- 2025-10-13: Added in-session reporting modal
+
+  - Wired shadcn dialog-based flow on Connect sessions so members can choose multiple report reasons
+  - On submit the session ends, re-queues the user with a fresh match, and surfaces a safety confirmation toast
+
 - 2025-09-02: Implemented simplified WebRTC voice chat
 
   - Added WebRTC dependencies: `webrtc-adapter` and `detectrtc`
@@ -120,6 +125,7 @@
   - Introduced shared `getUserById` helper in `lib/supabase/profile-service.ts` to reuse the profiles lookup across surfaces
   - Replaced ad-hoc `<button>` elements with the shared shadcn `Button` component for consistent styling and accessibility
   - Simplified resources search UI by removing the temporary loading overlay once local filtering proved fast enough
+  - Standardised chat message composer on shadcn `Input` for consistent styling and focus states
   - Consolidated shared auth helpers into `lib/supabase/auth-utils.ts` to keep validation and logging logic DRY
 
 ### Database & Profiles
@@ -216,9 +222,12 @@
     - On Connect: requires topic and selects voice to proceed
     - Navigates to `/connect/session?topic=...`
     - Session page shows two panels (peer and you), topic field read-only
-  - 2025-09-01: Added chat session & actions
-    - Buttons: End Call (to /connect), Switch to Text (to /connect/session/chat), Report an Issue (to /contact)
-    - Created `/connect/session/chat` with chat bubbles UI and composer
+- 2025-09-01: Added chat session & actions
+  - Buttons: End Call (to /connect), Switch to Text (to /connect/session/chat), Report an Issue (to /contact)
+  - Created `/connect/session/chat` with chat bubbles UI and composer
+- 2025-10-13: Added tooltips to mode selection buttons on `/connect`
+  - Introduced shadcn tooltip primitives for clearer voice vs chat affordances
+  - Tooltips surface “Start a voice session” and “Start a chat session” guidance
 
 ### Auth Gating Refactor
 

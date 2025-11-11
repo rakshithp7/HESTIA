@@ -2,14 +2,32 @@
 import React from 'react';
 import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import AudioWaveform from '@/components/AudioWaveform';
 import { ChatSection } from '@/components/chat/ChatSection';
 import { useRTCSessionContext } from '@/lib/rtc-session-context';
 import { cn } from '@/lib/utils';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Profile } from '@/lib/supabase/types';
 import { profileNeedsVerification } from '@/lib/verification';
+import { toast } from 'sonner';
+
+const REPORT_REASONS = [
+  'Inappropriate behavior',
+  'Harassment or bullying',
+  'Hate speech',
+  'Spam or self-promotion',
+  'Safety concern',
+] as const;
 
 export default function ConnectSessionPage() {
   const rtcHook = useRTCSessionContext();
@@ -41,12 +59,32 @@ export default function ConnectSessionPage() {
   const [userId, setUserId] = React.useState<string | null>(null);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const topic = (searchParams.get('topic') || '').toString();
   const isChatMode = mode === 'chat';
   const isMatching = status === 'idle' || status === 'waiting' || status === 'connecting';
   const [mobilePanel, setMobilePanel] = React.useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
+  const [reportReasons, setReportReasons] = React.useState<string[]>([]);
+  const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
+
+  const handleToggleReportReason = React.useCallback((reason: string) => {
+    setReportReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
+  }, []);
+
+  const resetReportState = React.useCallback(() => {
+    setReportReasons([]);
+    setIsSubmittingReport(false);
+  }, []);
+
+  const handleReportDialogChange = React.useCallback(
+    (open: boolean) => {
+      setIsReportOpen(open);
+      if (!open) {
+        resetReportState();
+      }
+    },
+    [resetReportState]
+  );
 
   const fetchProfile = React.useCallback(
     async (id: string, options: { silent?: boolean } = {}) => {
@@ -156,8 +194,30 @@ export default function ConnectSessionPage() {
   }, [end, router]);
 
   const handleReport = React.useCallback(() => {
-    router.push(`/contact?topic=${encodeURIComponent(topic)}`);
-  }, [router, topic]);
+    setIsReportOpen(true);
+  }, []);
+
+  const handleReportSubmit = React.useCallback(() => {
+    if (!reportReasons.length) {
+      return;
+    }
+
+    setIsSubmittingReport(true);
+
+    try {
+      if (typeof end === 'function') {
+        end();
+      }
+
+      toast.success('Thanks for helping keep the community safe.');
+      handleReportDialogChange(false);
+    } catch (error) {
+      console.error('[connect/session] Failed to submit report', error);
+      toast.error('We could not end the session. Please try again.');
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  }, [end, handleReportDialogChange, reportReasons]);
 
   const handleRequestLocalAudio = React.useCallback(async () => {
     console.log('Requesting local audio from stable wrapper');
@@ -204,56 +264,97 @@ export default function ConnectSessionPage() {
   }
 
   const hasVoiceSection = !isChatMode;
+  const isReportSubmitDisabled = isSubmittingReport || reportReasons.length === 0;
 
   return (
-    <div className="flex screen-height flex-col gap-6 md:flex-row md:gap-8">
-      <div className="flex flex-1 flex-col gap-4">
-        <div className="flex h-full flex-1 flex-col gap-6 md:flex-row">
-          {!isChatMode && (
-            <div className={cn('h-full p-1 md:w-1/4', mobilePanel === 'voice' ? 'flex md:flex' : 'hidden md:flex')}>
-              <VoiceSection
-                status={status}
-                muted={muted}
-                setMuted={setMuted}
-                setAudioElementRef={setAudioElementRef}
-                micReady={micReady}
-                micPermissionChecked={micPermissionChecked}
-                requestLocalAudio={handleRequestLocalAudio}
-                localStream={localStream}
-                remoteStream={remoteStream}
+    <>
+      <div className="flex screen-height flex-col gap-6 md:flex-row md:gap-8">
+        <div className="flex flex-1 flex-col gap-4">
+          <div className="flex h-full flex-1 flex-col gap-6 md:flex-row">
+            {!isChatMode && (
+              <div className={cn('h-full p-1 md:w-1/4', mobilePanel === 'voice' ? 'flex md:flex' : 'hidden md:flex')}>
+                <VoiceSection
+                  status={status}
+                  muted={muted}
+                  setMuted={setMuted}
+                  setAudioElementRef={setAudioElementRef}
+                  micReady={micReady}
+                  micPermissionChecked={micPermissionChecked}
+                  requestLocalAudio={handleRequestLocalAudio}
+                  localStream={localStream}
+                  remoteStream={remoteStream}
+                />
+              </div>
+            )}
+
+            <div
+              className={cn(
+                'flex min-h-0 h-full flex-1 flex-col rounded-xl bg-accent/40',
+                isChatMode ? 'w-full' : 'md:w-3/4',
+                !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
+              )}>
+              <ChatSection
+                messages={chatMessages}
+                isPeerTyping={isPeerTyping}
+                isChatReady={isChatReady}
+                onSendMessage={sendChatMessage}
+                onTypingStart={sendTypingStart}
+                onTypingStop={sendTypingStop}
               />
             </div>
-          )}
-
-          <div
-            className={cn(
-              'flex min-h-0 h-full flex-1 flex-col rounded-xl bg-accent/10 dark:bg-accent/20',
-              isChatMode ? 'w-full' : 'md:w-3/4',
-              !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
-            )}>
-            <ChatSection
-              messages={chatMessages}
-              isPeerTyping={isPeerTyping}
-              isChatReady={isChatReady}
-              onSendMessage={sendChatMessage}
-              onTypingStart={sendTypingStart}
-              onTypingStop={sendTypingStop}
-            />
           </div>
+
+          <MobileSessionActions
+            isVisible={hasVoiceSection}
+            mobilePanel={mobilePanel}
+            setMobilePanel={setMobilePanel}
+            onDisconnect={handleDisconnect}
+            onReport={handleReport}
+          />
+          {!hasVoiceSection && <MobileChatOnlyActions onDisconnect={handleDisconnect} onReport={handleReport} />}
         </div>
 
-        <MobileSessionActions
-          isVisible={hasVoiceSection}
-          mobilePanel={mobilePanel}
-          setMobilePanel={setMobilePanel}
-          onDisconnect={handleDisconnect}
-          onReport={handleReport}
-        />
-        {!hasVoiceSection && <MobileChatOnlyActions onDisconnect={handleDisconnect} onReport={handleReport} />}
+        <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
       </div>
 
-      <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
-    </div>
+      <Dialog open={isReportOpen} onOpenChange={handleReportDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report this conversation</DialogTitle>
+            <DialogDescription>
+              Select everything that applies. We will end this session and match you with someone new.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {REPORT_REASONS.map((reason) => {
+              const checked = reportReasons.includes(reason);
+              return (
+                <label key={reason} className="flex items-center gap-3 rounded-lg p-1">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={() => handleToggleReportReason(reason)}
+                    aria-label={reason}
+                  />
+                  <span className="text-sm leading-tight">{reason}</span>
+                </label>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleReportDialogChange(false)}
+              disabled={isSubmittingReport}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleReportSubmit} disabled={isReportSubmitDisabled}>
+              {isSubmittingReport ? 'Submitting…' : 'Submit report'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -378,9 +479,9 @@ function MobileSessionActions({
           <span className="text-sm font-semibold">Disconnect</span>
         </Button>
       </div>
-      <Button type="button" variant="ghost" className="w-full gap-2" onClick={onReport}>
+      <Button type="button" variant="ghost" className="w-full gap-2 " onClick={onReport}>
         <AlertTriangle className="size-4" />
-        <span className="text-sm font-medium">Report an Issue</span>
+        <span className="text-sm font-mediumaccent">Report an Issue</span>
       </Button>
     </div>
   );
@@ -404,22 +505,22 @@ function MobileChatOnlyActions({ onDisconnect, onReport }: ActionHandlers) {
 function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
   return (
     <div className="hidden md:flex md:w-[80px] flex-col items-center gap-8 pt-6">
-      <div className="flex h-full w-full flex-col items-center gap-4 justify-evenly">
+      <div className="flex flex-col items-center gap-4 justify-evenly h-full w-full">
         <Button
           variant="ghost"
           aria-label="End Session"
-          className="flex h-auto w-full min-h-[80px] flex-col items-center justify-center gap-1 hover:bg-accent/80 p-2"
+          className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
           onClick={onDisconnect}>
           <XSquare className="size-6 text-destructive" />
-          <span className="text-xs opacity-80 text-center leading-tight">End Session</span>
+          <span className="text-base opacity-80 text-center leading-tight">End Session</span>
         </Button>
         <Button
           variant="ghost"
           aria-label="Report an Issue"
-          className="flex h-auto w-full min-h-[80px] flex-col items-center justify-center gap-1 hover:bg-accent/80 p-2"
+          className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
           onClick={onReport}>
           <AlertTriangle className="size-6" />
-          <span className="text-xs opacity-80 text-center leading-tight">Report an Issue</span>
+          <span className="text-base opacity-80 text-center leading-tight">Report an Issue</span>
         </Button>
       </div>
     </div>

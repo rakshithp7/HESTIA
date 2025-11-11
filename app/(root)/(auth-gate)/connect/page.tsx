@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Phone, MessageSquare } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 export default function ConnectPage() {
   const router = useRouter();
@@ -33,24 +34,36 @@ export default function ConnectPage() {
           onChange={(e) => setTopic(e.target.value)}
         />
 
-        <div className="mt-4 flex items-center justify-center gap-6">
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Call"
-            className={`size-24 ${mode === 'voice' ? 'border-primary bg-primary/20' : ''}`}
-            onClick={() => setMode('voice')}>
-            <Phone className="size-10" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Chat"
-            className={`size-24 ${mode === 'chat' ? 'border-primary bg-primary/20' : ''}`}
-            onClick={() => setMode('chat')}>
-            <MessageSquare className="size-10" />
-          </Button>
-        </div>
+        <TooltipProvider>
+          <div className="mt-4 flex items-center justify-center gap-6">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Call"
+                  className={`size-36 ${mode === 'voice' ? 'border-primary bg-primary/20' : ''}`}
+                  onClick={() => setMode('voice')}>
+                  <Phone className="size-18" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Start a voice & chat session</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Chat"
+                  className={`size-36 ${mode === 'chat' ? 'border-primary bg-primary/20' : ''}`}
+                  onClick={() => setMode('chat')}>
+                  <MessageSquare className="size-18" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Start a chat only session</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
 
         <Button
           variant="outline"

@@ -11,6 +11,7 @@ import { getVerifiedUser } from '@/lib/supabase/auth-utils';
 import UserAvatar from './UserAvatar';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import { Menu } from 'lucide-react';
 
 // Use dynamic export to ensure the component only renders on the client side
 const Navbar = () => {
@@ -128,9 +129,7 @@ const Navbar = () => {
             className="h-10 w-10 p-0 flex items-center justify-center"
             onClick={() => setOpen((v) => !v)}
             aria-label="Open menu">
-            <svg width={28} height={28} fill="none" stroke="currentColor" strokeWidth={2}>
-              <path d="M4 7h20M4 14h20M4 21h20" />
-            </svg>
+            <Menu className="size-6" />
           </Button>
         </div>
       </div>
