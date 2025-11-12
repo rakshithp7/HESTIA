@@ -6,7 +6,14 @@ import ProfileClient from './profile-client';
 import { getVerifiedUser } from '@/lib/supabase/auth-utils';
 import { getUserById } from '@/lib/supabase/profile-service';
 
-export default async function ProfilePage() {
+type ProfilePageProps = {
+  searchParams?: {
+    section?: string;
+  };
+};
+
+export default async function ProfilePage({ searchParams }: ProfilePageProps) {
+  const resolvedSearchParams = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const user = await getVerifiedUser(supabase, 'profile');
@@ -34,6 +41,7 @@ export default async function ProfilePage() {
       email={user.email ?? ''}
       firstName={profile?.first_name ?? null}
       lastName={profile?.last_name ?? null}
+      initialSection={(resolvedSearchParams?.section as string | undefined) ?? undefined}
     />
   );
 }

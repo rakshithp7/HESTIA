@@ -18,9 +18,10 @@ import { useRTCSessionContext } from '@/lib/rtc-session-context';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import type { Profile } from '@/lib/supabase/types';
+import type { ActiveUserBan, Profile } from '@/lib/supabase/types';
 import { profileNeedsVerification } from '@/lib/verification';
 import { toast } from 'sonner';
+import { getBanRemainingSeconds } from '@/lib/moderation/bans';
 
 const REPORT_REASONS = [
   'Inappropriate behavior',
@@ -61,6 +62,9 @@ export default function ConnectSessionPage() {
   const [profileLoading, setProfileLoading] = React.useState(true);
   const [profileError, setProfileError] = React.useState<string | null>(null);
   const [userId, setUserId] = React.useState<string | null>(null);
+  const [activeBan, setActiveBan] = React.useState<ActiveUserBan | null>(null);
+  const [banLoading, setBanLoading] = React.useState(true);
+  const [banError, setBanError] = React.useState<string | null>(null);
 
   const router = useRouter();
   const isChatMode = mode === 'chat';
@@ -189,6 +193,39 @@ export default function ConnectSessionPage() {
     };
   }, [fetchProfile, router, supabase]);
 
+  const fetchActiveBan = React.useCallback(
+    async (options: { silent?: boolean } = {}) => {
+      if (!options.silent) {
+        setBanLoading(true);
+      }
+      setBanError(null);
+      try {
+        const response = await fetch('/api/me/ban');
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || 'Failed to check ban status');
+        }
+        const payload = (await response.json()) as { ban: ActiveUserBan | null };
+        setActiveBan(payload.ban ?? null);
+      } catch (err) {
+        console.error('[connect/session] Failed to load ban status', err);
+        setBanError((err as Error).message);
+      } finally {
+        setBanLoading(false);
+      }
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!userId) return;
+    void fetchActiveBan();
+  }, [fetchActiveBan, userId]);
+
+  const handleBanRetry = React.useCallback(() => {
+    void fetchActiveBan();
+  }, [fetchActiveBan]);
+
   const handleDisconnect = React.useCallback(() => {
     if (typeof end === 'function') {
       setIsDisconnecting(true);
@@ -282,6 +319,18 @@ export default function ConnectSessionPage() {
 
   if (profileNeedsVerification(profile)) {
     return <VerificationBlockedState onGoToVerify={() => router.replace('/verify')} />;
+  }
+
+  if (banLoading) {
+    return <BanLoadingState />;
+  }
+
+  if (banError) {
+    return <BanErrorState message={banError} onRetry={handleBanRetry} />;
+  }
+
+  if (activeBan) {
+    return <BannedState ban={activeBan} onRetry={handleBanRetry} />;
   }
 
   if (isDisconnecting) {
@@ -423,6 +472,79 @@ function VerificationErrorState({ message, onRetry }: { message: string; onRetry
       </div>
     </div>
   );
+}
+
+function BanLoadingState() {
+  return (
+    <div className="flex h-full w-full items-center justify-center py-12">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Loader2 className="size-10 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Checking your moderation status…</p>
+      </div>
+    </div>
+  );
+}
+
+function BanErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center px-6 py-12">
+      <div className="mx-auto max-w-md space-y-4 text-center">
+        <ShieldAlert className="mx-auto size-12 text-destructive" />
+        <p className="text-base text-muted-foreground">{message}</p>
+        <Button onClick={onRetry}>Retry</Button>
+      </div>
+    </div>
+  );
+}
+
+function BannedState({ ban, onRetry }: { ban: ActiveUserBan; onRetry: () => void }) {
+  const endDate = new Date(ban.ends_at);
+  const remainingSeconds = getBanRemainingSeconds(ban);
+  const remainingLabel =
+    remainingSeconds !== null
+      ? formatDuration(remainingSeconds)
+      : `until ${endDate.toLocaleString()}`;
+
+  return (
+    <div className="flex h-full w-full items-center justify-center px-6 py-12">
+      <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+        <ShieldAlert className="mx-auto size-14 text-destructive" />
+        <h2 className="text-2xl font-semibold">Access temporarily suspended</h2>
+        <p className="text-muted-foreground">
+          An administrator has paused your access {remainingSeconds !== null ? `for ${remainingLabel}` : remainingLabel}.
+          You won’t be able to start new sessions until the ban expires.
+        </p>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            <strong>Ends:</strong> {endDate.toLocaleString()}
+          </p>
+          {ban.reason && (
+            <p>
+              <strong>Reason:</strong> {ban.reason}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button variant="outline" onClick={onRetry}>
+            Check again
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'}`;
 }
 
 function VerificationBlockedState({ onGoToVerify }: { onGoToVerify: () => void }) {

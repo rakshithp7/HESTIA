@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import type { ChatMessage } from '@/lib/webrtc/useRTCSession';
+import { fetchActiveBan } from '@/lib/moderation/server-bans';
 
 export const runtime = 'nodejs';
 
@@ -27,6 +28,15 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const [ban] = await Promise.all([fetchActiveBan(user.id)]);
+
+    if (ban) {
+      return NextResponse.json(
+        { error: 'User is banned', bannedUntil: ban.ends_at, reason: ban.reason, banId: ban.id },
+        { status: 403 }
+      );
     }
 
     const payload = (await req.json().catch(() => null)) as ReportPayload | null;
@@ -73,6 +83,9 @@ export async function POST(req: Request) {
     const reporterEmail = reporterUser?.data?.user?.email ?? null;
     const reportedEmail = reportedUser?.data?.user?.email ?? null;
 
+    const trimmedNotes = notes.trim();
+    const sanitizedNotes = trimmedNotes || null;
+
     const reportEnvelope = {
       roomId,
       topic: match.topic,
@@ -81,11 +94,35 @@ export async function POST(req: Request) {
       reporter: { id: user.id, email: reporterEmail },
       reported: { id: reportedUserId, email: reportedEmail },
       reasons,
-      notes: notes.trim() || null,
+      notes: sanitizedNotes,
       chatLog,
     };
 
     console.log('[report] moderation payload\n', JSON.stringify(reportEnvelope, null, 2));
+
+    const { data: insertedReport, error: insertError } = await service
+      .from('moderation_reports')
+      .insert({
+        room_id: roomId,
+        topic: match.topic,
+        mode: match.mode,
+        reporter_id: user.id,
+        reporter_email: reporterEmail,
+        reported_id: reportedUserId,
+        reported_email: reportedEmail,
+        reasons,
+        notes: sanitizedNotes,
+        chat_log: chatLog,
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      console.error('[report] Failed to store moderation report', insertError);
+      return NextResponse.json({ error: 'Unable to store moderation report' }, { status: 500 });
+    }
+
+    const reportId = insertedReport?.id ?? null;
 
     const { error: blockError } = await service.from('blocked_users').upsert(
       {
@@ -104,7 +141,7 @@ export async function POST(req: Request) {
       console.error('[report] Failed to cleanup match after report', cleanupError);
     }
 
-    return NextResponse.json({ reportedUserId });
+    return NextResponse.json({ reportedUserId, reportId });
   } catch (error) {
     console.error('[report] Unexpected error', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

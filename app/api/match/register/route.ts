@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
+import { fetchActiveBan } from '@/lib/moderation/server-bans';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +22,15 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const [ban] = await Promise.all([fetchActiveBan(user.id)]);
+
+    if (ban) {
+      return NextResponse.json(
+        { error: 'User is banned', bannedUntil: ban.ends_at, reason: ban.reason, banId: ban.id },
+        { status: 403 }
+      );
     }
 
     const payload = (await req.json().catch(() => null)) as {

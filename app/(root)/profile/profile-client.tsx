@@ -14,6 +14,7 @@ type ProfileClientProps = {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  initialSection?: string;
 };
 
 const NAV_ITEMS = [
@@ -30,9 +31,15 @@ type BlockedUser = {
   lastName: string | null;
 };
 
-export default function ProfileClient({ email, firstName, lastName }: ProfileClientProps) {
+export default function ProfileClient({ email, firstName, lastName, initialSection }: ProfileClientProps) {
   const supabase = createSupabaseBrowserClient();
-  const [activeSection, setActiveSection] = useState<NavItemId>('profile');
+
+  const sanitizeSection = useCallback((section?: string): NavItemId => {
+    const candidate = section as NavItemId | undefined;
+    return candidate && NAV_ITEMS.some((item) => item.id === candidate) ? candidate : 'profile';
+  }, []);
+
+  const [activeSection, setActiveSection] = useState<NavItemId>(() => sanitizeSection(initialSection));
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +73,10 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
   useEffect(() => {
     void fetchBlockedUsers();
   }, [fetchBlockedUsers]);
+
+  useEffect(() => {
+    setActiveSection(sanitizeSection(initialSection));
+  }, [initialSection, sanitizeSection]);
 
   async function handlePasswordChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -277,6 +288,7 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
                 {renderBlockedUsers()}
               </section>
             ) : null}
+
           </main>
         </div>
       </div>

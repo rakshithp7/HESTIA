@@ -12,6 +12,7 @@ import UserAvatar from './UserAvatar';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 import { Menu } from 'lucide-react';
+import type { ProfileRole } from '@/lib/supabase/types';
 
 // Use dynamic export to ensure the component only renders on the client side
 const Navbar = () => {
@@ -19,6 +20,7 @@ const Navbar = () => {
   const [isAuthed, setIsAuthed] = useState(false);
   const [initials, setInitials] = useState<string>('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createSupabaseBrowserClient();
@@ -41,11 +43,29 @@ const Navbar = () => {
       if (!user) {
         setIsAuthed(false);
         setInitials('U');
+        setIsAdmin(false);
         return;
       }
 
       setIsAuthed(true);
       setInitials(extractInitials(user.user_metadata as Record<string, unknown> | undefined, user.email ?? null));
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle<{ role: ProfileRole }>();
+        if (error) {
+          console.error('[navbar] Failed to load profile role', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.role === 'admin');
+        }
+      } catch (err) {
+        console.error('[navbar] Unexpected profile role error', err);
+        setIsAdmin(false);
+      }
     }
 
     void refreshUser();
@@ -116,7 +136,7 @@ const Navbar = () => {
           </div>
           <div className="ml-auto flex items-center gap-6 pr-6">
             <ThemeToggle />
-            {isAuthed ? <UserAvatar initials={initials} onSignOut={handleSignOut} /> : null}
+            {isAuthed ? <UserAvatar initials={initials} onSignOut={handleSignOut} isAdmin={isAdmin} /> : null}
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
@@ -193,6 +213,17 @@ const Navbar = () => {
                     }}>
                     Profile
                   </Link>
+                  {isAdmin ? (
+                    <Link
+                      href="/admin"
+                      className="text-lg tracking-widest hover:underline w-full text-center"
+                      onClick={() => {
+                        setOpen(false);
+                        setMenuOpen(false);
+                      }}>
+                      Admin
+                    </Link>
+                  ) : null}
                   <Button
                     type="button"
                     variant="ghost"

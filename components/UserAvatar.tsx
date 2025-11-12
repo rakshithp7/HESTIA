@@ -15,9 +15,10 @@ type UserAvatarProps = {
   initials: string;
   onSignOut: () => void | Promise<void>;
   className?: string;
+  isAdmin?: boolean;
 };
 
-export default function UserAvatar({ initials, onSignOut, className }: UserAvatarProps) {
+export default function UserAvatar({ initials, onSignOut, className, isAdmin }: UserAvatarProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -35,6 +36,11 @@ export default function UserAvatar({ initials, onSignOut, className }: UserAvata
         <DropdownMenuItem asChild>
           <Link href="/profile">Profile</Link>
         </DropdownMenuItem>
+        {isAdmin ? (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">Admin</Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem onClick={() => onSignOut()}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

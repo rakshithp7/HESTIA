@@ -57,7 +57,16 @@
   - `useRTCSession` now uses authenticated user IDs for pairing, skips blocked peers, and syncs match state with the new APIs so moderators can trace every session
   - Hardened schema integrity by referencing `profiles`, re-enabling RLS on the new tables, and scoping `blocked_users` policies to the owning member
   - Profile page now includes a “Blocked users” panel so members can review and remove entries without leaving the app
+- 2025-10-17: Bootstrapped admin roles and moderation schema
 
+  - Added Supabase migration for profile roles, moderation reports, user bans, and an `active_user_bans` helper view
+  - Introduced shared TypeScript models plus helpers for admin role checks and ban calculations
+- 2025-10-18: Built moderator workflows and ban enforcement
+
+  - Persisted `/api/report` submissions into `moderation_reports` and exposed `/api/me/ban` plus admin-only moderation APIs for listing, resolving, and banning
+  - Created `/admin/reports` dashboard with ban issuance/lift controls, transcript viewer, and resolution actions
+  - Added client-side ban messaging and matchmaking guards so banned members see the remaining duration before rejoining
+  - Surfaced admin navigation via the profile drawer and a dedicated `/admin` console that mirrors the profile layout while keeping tools separate
 - 2025-09-02: Implemented simplified WebRTC voice chat
 
   - Added WebRTC dependencies: `webrtc-adapter` and `detectrtc`
