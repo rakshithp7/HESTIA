@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import AudioWaveform from '@/components/AudioWaveform';
 import { ChatSection } from '@/components/chat/ChatSection';
 import { useRTCSessionContext } from '@/lib/rtc-session-context';
@@ -34,6 +35,8 @@ export default function ConnectSessionPage() {
   const {
     status,
     mode,
+    roomId,
+    peerUserId,
     muted,
     setMuted,
     setAudioElementRef,
@@ -50,6 +53,7 @@ export default function ConnectSessionPage() {
     sendTypingStart,
     sendTypingStop,
     end,
+    markUserBlocked,
   } = rtcHook;
 
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
@@ -65,6 +69,7 @@ export default function ConnectSessionPage() {
   const [isDisconnecting, setIsDisconnecting] = React.useState(false);
   const [isReportOpen, setIsReportOpen] = React.useState(false);
   const [reportReasons, setReportReasons] = React.useState<string[]>([]);
+  const [reportNotes, setReportNotes] = React.useState('');
   const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
 
   const handleToggleReportReason = React.useCallback((reason: string) => {
@@ -73,6 +78,7 @@ export default function ConnectSessionPage() {
 
   const resetReportState = React.useCallback(() => {
     setReportReasons([]);
+    setReportNotes('');
     setIsSubmittingReport(false);
   }, []);
 
@@ -197,14 +203,37 @@ export default function ConnectSessionPage() {
     setIsReportOpen(true);
   }, []);
 
-  const handleReportSubmit = React.useCallback(() => {
-    if (!reportReasons.length) {
+  const handleReportSubmit = React.useCallback(async () => {
+    if (!reportReasons.length || !roomId || !peerUserId) {
       return;
     }
 
     setIsSubmittingReport(true);
 
     try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId,
+          reasons: reportReasons,
+          notes: reportNotes.trim(),
+          chatLog: chatMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload.error || 'Failed to submit report');
+      }
+
+      const { reportedUserId } = (await response.json().catch(() => ({}))) as { reportedUserId?: string };
+      if (reportedUserId) {
+        markUserBlocked?.(reportedUserId);
+      } else {
+        markUserBlocked?.(peerUserId);
+      }
+
       if (typeof end === 'function') {
         end();
       }
@@ -213,11 +242,11 @@ export default function ConnectSessionPage() {
       handleReportDialogChange(false);
     } catch (error) {
       console.error('[connect/session] Failed to submit report', error);
-      toast.error('We could not end the session. Please try again.');
+      toast.error('We could not submit your report. Please try again.');
     } finally {
       setIsSubmittingReport(false);
     }
-  }, [end, handleReportDialogChange, reportReasons]);
+  }, [chatMessages, end, handleReportDialogChange, markUserBlocked, peerUserId, reportNotes, reportReasons, roomId]);
 
   const handleRequestLocalAudio = React.useCallback(async () => {
     console.log('Requesting local audio from stable wrapper');
@@ -264,7 +293,8 @@ export default function ConnectSessionPage() {
   }
 
   const hasVoiceSection = !isChatMode;
-  const isReportSubmitDisabled = isSubmittingReport || reportReasons.length === 0;
+  const canSubmitReport = reportReasons.length > 0 && !!roomId && !!peerUserId;
+  const isReportSubmitDisabled = isSubmittingReport || !canSubmitReport;
 
   return (
     <>
@@ -339,6 +369,20 @@ export default function ConnectSessionPage() {
                 </label>
               );
             })}
+          </div>
+          <div className="space-y-2 pt-4">
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span>Additional details</span>
+              <span className="text-xs text-muted-foreground">Optional</span>
+            </div>
+            <Textarea
+              value={reportNotes}
+              onChange={(event) => setReportNotes(event.target.value)}
+              placeholder="Share anything else that might help our safety team review this conversation."
+              maxLength={500}
+              aria-label="Additional report details"
+            />
+            <p className="text-xs text-muted-foreground text-right">{reportNotes.length}/500</p>
           </div>
           <DialogFooter>
             <Button

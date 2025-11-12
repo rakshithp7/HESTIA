@@ -36,10 +36,27 @@
 
 ### WebRTC Voice Implementation
 
+- 2025-10-16: Stabilized RTC session teardown & diagnostics
+
+  - Replaced the recursive `rtcWarn`/`rtcError` helpers with a shared logger so connection warnings stop crashing the hook
+  - Persist the active room channel via ref so `end_session` broadcasts reuse the subscribed channel and reliably notify peers
+  - Hardened cleanup paths to clear room channel refs whenever a room unsubscribes, preventing stale signaling handles between matches
+
 - 2025-10-13: Added in-session reporting modal
 
   - Wired shadcn dialog-based flow on Connect sessions so members can choose multiple report reasons
   - On submit the session ends, re-queues the user with a fresh match, and surfaces a safety confirmation toast
+- 2025-10-14: Enhanced reporting dialog with contextual notes
+
+  - Added optional free-form comments textarea so members can provide safety details beyond the predefined reasons
+  - Captured note state alongside selected reasons to prepare for downstream moderation integrations
+- 2025-10-15: Wired matchmaking telemetry with blocking & moderation hooks
+
+  - Added Supabase tables for `active_matches` and `blocked_users`, plus API routes to register, cleanup, and list matches
+  - Reporting endpoint now records chat transcripts, resolves participant emails, blocks the reported user, and logs the moderation payload for email previews
+  - `useRTCSession` now uses authenticated user IDs for pairing, skips blocked peers, and syncs match state with the new APIs so moderators can trace every session
+  - Hardened schema integrity by referencing `profiles`, re-enabling RLS on the new tables, and scoping `blocked_users` policies to the owning member
+  - Profile page now includes a “Blocked users” panel so members can review and remove entries without leaving the app
 
 - 2025-09-02: Implemented simplified WebRTC voice chat
 

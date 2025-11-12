@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import VerificationStatus from '@/components/verification/VerificationStatus';
 import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 
 type ProfileClientProps = {
   email: string;
@@ -18,9 +19,16 @@ type ProfileClientProps = {
 const NAV_ITEMS = [
   { id: 'profile', label: 'Profile' },
   { id: 'verification', label: 'Verification Status' },
+  { id: 'blocked', label: 'Blocked Users' },
 ] as const;
 
 type NavItemId = (typeof NAV_ITEMS)[number]['id'];
+
+type BlockedUser = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+};
 
 export default function ProfileClient({ email, firstName, lastName }: ProfileClientProps) {
   const supabase = createSupabaseBrowserClient();
@@ -29,9 +37,35 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [blockedLoading, setBlockedLoading] = useState(true);
+  const [blockedError, setBlockedError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const displayName =
     [firstName, lastName].filter((part) => (part ?? '').trim().length > 0).join(' ') || email || 'Account';
+
+  const fetchBlockedUsers = useCallback(async () => {
+    setBlockedLoading(true);
+    setBlockedError(null);
+    try {
+      const response = await fetch('/api/blocked');
+      if (!response.ok) {
+        throw new Error('Unable to load blocked users');
+      }
+      const data = (await response.json()) as { blockedUsers?: BlockedUser[] };
+      setBlockedUsers(data.blockedUsers ?? []);
+    } catch (err) {
+      console.error('[profile] Failed to fetch blocked users', err);
+      setBlockedError('Unable to load blocked users right now.');
+    } finally {
+      setBlockedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchBlockedUsers();
+  }, [fetchBlockedUsers]);
 
   async function handlePasswordChange(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +90,84 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
     setSuccess('Password updated successfully.');
     setTimeout(() => setSuccess(null), 2500);
   }
+
+  async function handleUnblock(userId: string) {
+    setRemovingId(userId);
+    try {
+      const response = await fetch('/api/blocked', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockedUserId: userId }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to unblock user');
+      }
+      setBlockedUsers((prev) => prev.filter((entry) => entry.id !== userId));
+    } catch (err) {
+      console.error('[profile] Failed to unblock user', err);
+      setBlockedError('Unable to unblock that user. Please try again.');
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
+  const renderBlockedUsers = () => {
+    if (blockedLoading) {
+      return (
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          <span>Loading blocked users…</span>
+        </div>
+      );
+    }
+
+    if (blockedError) {
+      return (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center justify-between">
+          <span>{blockedError}</span>
+          <Button size="sm" variant="ghost" onClick={() => fetchBlockedUsers()}>
+            Retry
+          </Button>
+        </div>
+      );
+    }
+
+    if (!blockedUsers.length) {
+      return <p className="text-sm text-muted-foreground">You haven’t blocked anyone yet.</p>;
+    }
+
+    return (
+      <ul className="space-y-3">
+        {blockedUsers.map((blockedUser) => {
+      const initials = [blockedUser.firstName, blockedUser.lastName]
+        .filter((part) => (part ?? '').trim().length > 0)
+        .map((part) => (part ?? '').trim().charAt(0).toUpperCase())
+        .join('');
+      const label = initials || 'Blocked user';
+
+          return (
+            <li
+              key={blockedUser.id}
+              className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground">
+                  User ID: <span className="font-mono">{blockedUser.id}</span>
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={removingId === blockedUser.id}
+                onClick={() => handleUnblock(blockedUser.id)}>
+                {removingId === blockedUser.id ? 'Removing…' : 'Unblock'}
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   return (
     <div className="px-6 py-8 md:px-12">
@@ -151,6 +263,18 @@ export default function ProfileClient({ email, firstName, lastName }: ProfileCli
                   </p>
                 </div>
                 <VerificationStatus variant="embedded" />
+              </section>
+            ) : null}
+
+            {activeSection === 'blocked' ? (
+              <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm text-foreground">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-semibold">Blocked users</h2>
+                  <p className="text-sm text-foreground">
+                    Manage the people you’ve blocked. Removing someone allows the matching system to pair you again.
+                  </p>
+                </div>
+                {renderBlockedUsers()}
               </section>
             ) : null}
           </main>

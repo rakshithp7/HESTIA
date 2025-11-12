@@ -90,7 +90,7 @@ const describeSupabaseError = (payload: unknown): string => {
 export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const isChatMode = mode === 'chat';
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const clientId = useMemo(() => getOrCreateClientId(), []);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [status, setStatusState] = useState<ConnectionStatus>('idle');
   const statusRef = useRef<ConnectionStatus>('idle');
@@ -122,6 +122,93 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isPeerTyping, setIsPeerTyping] = useState(false);
   const [isChatReady, setIsChatReady] = useState(false);
+  const [activePeerUserId, setActivePeerUserId] = useState<string | null>(null);
+  const peerUserIdRef = useRef<string | null>(null);
+  const updatePeerUserId = useCallback(
+    (next: string | null) => {
+      if (peerUserIdRef.current === next) return;
+      peerUserIdRef.current = next;
+      setActivePeerUserId(next);
+    },
+    [setActivePeerUserId]
+  );
+
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+  const [blockedByUserIds, setBlockedByUserIds] = useState<string[]>([]);
+  const blockedUsersRef = useRef<Set<string>>(new Set());
+  const blockedByUsersRef = useRef<Set<string>>(new Set());
+  const syncBlockedUsers = useCallback(
+    (ids: string[]) => {
+      const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+      blockedUsersRef.current = new Set(uniqueIds);
+      setBlockedUserIds(uniqueIds);
+    },
+    [setBlockedUserIds]
+  );
+  const syncBlockedByUsers = useCallback(
+    (ids: string[]) => {
+      const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+      blockedByUsersRef.current = new Set(uniqueIds);
+      setBlockedByUserIds(uniqueIds);
+    },
+    [setBlockedByUserIds]
+  );
+  const appendBlockedUser = useCallback((userId: string | null) => {
+    if (!userId || blockedUsersRef.current.has(userId)) return;
+    const next = new Set(blockedUsersRef.current);
+    next.add(userId);
+    blockedUsersRef.current = next;
+    setBlockedUserIds(Array.from(next));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const resolveUser = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (error) {
+          console.error('[RTC] Failed to resolve current user', error);
+          return;
+        }
+        setCurrentUserId(user?.id ?? null);
+      } catch (err) {
+        if (!cancelled) console.error('[RTC] Unexpected auth error', err);
+      }
+    };
+    void resolveUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    let cancelled = false;
+    const loadBlocked = async () => {
+      try {
+        const response = await fetch('/api/blocked');
+        if (!response.ok) {
+          console.error('[RTC] Failed to fetch blocked users', await response.text());
+          return;
+        }
+        const data = (await response.json()) as { blockedUsers?: { id: string }[]; blockedByUserIds?: string[] };
+        if (!cancelled) {
+          syncBlockedUsers((data.blockedUsers ?? []).map((entry) => entry.id));
+          syncBlockedByUsers(data.blockedByUserIds ?? []);
+        }
+      } catch (error) {
+        if (!cancelled) console.error('[RTC] Blocked users fetch error', error);
+      }
+    };
+    void loadBlocked();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, syncBlockedUsers, syncBlockedByUsers]);
 
   // Media and connection references
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -130,6 +217,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const matchingChannelRef = useRef<RealtimeChannel | null>(null);
+  const roomChannelRef = useRef<RealtimeChannel | null>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingPresenceRef = useRef<{ availability: 'waiting' | 'busy'; roomId: string | null } | null>(null);
@@ -219,13 +307,15 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   }, []);
 
   type PresenceMeta = {
-    clientId: string;
+    userId: string;
     mode: SessionMode;
     status?: 'waiting' | 'busy';
     roomId?: string | null;
   };
 
   const sendPresenceNow = useCallback(() => {
+    if (!currentUserId) return;
+
     if (presenceTimeoutRef.current) {
       clearTimeout(presenceTimeoutRef.current);
       presenceTimeoutRef.current = null;
@@ -250,12 +340,13 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     lastPresenceTimestampRef.current = Date.now();
 
     void channel
-      .track({ clientId, mode, status: payload.availability, roomId: payload.roomId })
+      .track({ userId: currentUserId, mode, status: payload.availability, roomId: payload.roomId })
       .catch((err) => console.error('Error updating presence state:', err));
-  }, [clientId, mode]);
+  }, [currentUserId, mode]);
 
   const announcePresence = useCallback(
     (availability: 'waiting' | 'busy', activeRoomId: string | null) => {
+      if (!currentUserId) return;
       const target = { availability, roomId: activeRoomId };
       const last = lastPresenceRef.current;
       const pending = pendingPresenceRef.current;
@@ -288,7 +379,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
         sendPresenceNow();
       }, Math.max(PRESENCE_THROTTLE_MS - elapsed, 0));
     },
-    [sendPresenceNow]
+    [currentUserId, sendPresenceNow]
   );
 
   const flushPendingIceCandidates = useCallback(async () => {
@@ -327,7 +418,15 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     }
 
     const availablePeerEntry = Object.entries(state).find(([key, metas]) => {
-      if (key === clientId) return false;
+      if (key === currentUserId) return false;
+      if (blockedUsersRef.current.has(key)) {
+        console.log('[RTC] Skipping peer I blocked', key);
+        return false;
+      }
+      if (blockedByUsersRef.current.has(key)) {
+        console.log('[RTC] Skipping peer that blocked me', key);
+        return false;
+      }
       const meta = metas?.[0] as PresenceMeta | undefined;
       console.log('[RTC] Evaluating peer for match', key, meta);
       if (!meta) return false;
@@ -336,19 +435,20 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
 
     if (availablePeerEntry) {
       const [receiverId] = availablePeerEntry;
-      const sortedPair = [clientId, receiverId].sort();
-      const newRoomId = [...sortedPair, mode].join(':');
+      if (!currentUserId || !receiverId) return;
+      const newRoomId = buildRoomId(currentUserId, receiverId, mode);
       console.log('[RTC] Matching with peer', receiverId, 'roomId', newRoomId);
 
       channel
         .send({
           type: 'broadcast',
           event: 'pair',
-          payload: { initiatorId: clientId, receiverId, roomId: newRoomId },
+          payload: { initiatorId: currentUserId, receiverId, roomId: newRoomId },
         })
         .catch((err) => console.error('Error sending pair signal:', err));
 
       updateRoomId(newRoomId);
+      updatePeerUserId(receiverId);
       updateStatus('connecting');
       announcePresence('busy', newRoomId);
     } else {
@@ -358,7 +458,25 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       }
       announcePresence('waiting', null);
     }
-  }, [announcePresence, clientId, mode, updateStatus, updateRoomId]);
+  }, [announcePresence, currentUserId, mode, updatePeerUserId, updateStatus, updateRoomId]);
+
+  const cleanupActiveMatch = useCallback(async (roomIdValue?: string | null) => {
+    const targetRoomId = roomIdValue ?? roomIdRef.current;
+    if (!targetRoomId) return;
+
+    try {
+      const response = await fetch('/api/match/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: targetRoomId }),
+      });
+      if (!response.ok) {
+        console.error('[RTC] Failed to cleanup match', await response.text());
+      }
+    } catch (error) {
+      console.error('[RTC] Cleanup match error', error);
+    }
+  }, []);
 
   const resetSessionState = useCallback(
     ({
@@ -376,8 +494,12 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       setMuted(false);
       setMicReady(false);
       setChatMessages([]);
-      endedByPeerRef.current = false;
       pendingIceCandidatesRef.current = [];
+      updatePeerUserId(null);
+      const activeRoomId = roomIdRef.current;
+      if (clearRoom && activeRoomId) {
+        void cleanupActiveMatch(activeRoomId);
+      }
       if (clearRoom) updateRoomId(null);
       updateStatus(nextStatus);
       if (requeue) {
@@ -396,7 +518,53 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       setMicReady,
       setMuted,
       setChatMessages,
+      updatePeerUserId,
+      cleanupActiveMatch,
     ]
+  );
+
+  const registerMatch = useCallback(
+    async (roomIdValue: string, peerUserId: string) => {
+      if (!roomIdValue || !peerUserId) return false;
+      try {
+        const response = await fetch('/api/match/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId: roomIdValue, topic, mode, peerUserId }),
+        });
+
+        if (response.status === 409) {
+          let blockedBy: 'self' | 'peer' | null = null;
+          try {
+            const payload = (await response.json()) as { blockedBy?: 'self' | 'peer' };
+            blockedBy = payload.blockedBy ?? null;
+          } catch {
+            // ignore parse errors
+          }
+
+          if (blockedBy === 'self') {
+            toast('Skipped a blocked match', {
+              description: 'We are looking for another person to chat with.',
+            });
+          }
+
+          updatePeerUserId(null);
+          resetSessionState({ nextStatus: 'waiting', requeue: true });
+          return false;
+        }
+
+        if (!response.ok) {
+          console.error('[RTC] Failed to register match', await response.text());
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('[RTC] register match error', error);
+        return false;
+      }
+    },
+    [mode, resetSessionState, topic, updatePeerUserId]
   );
 
   useEffect(() => {
@@ -423,6 +591,17 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       }
     };
   }, [status, announcePresence, attemptMatch, updateRoomId, updateStatus]);
+
+  useEffect(() => {
+    if (!roomId || !activePeerUserId) return;
+    void registerMatch(roomId, activePeerUserId);
+  }, [activePeerUserId, registerMatch, roomId]);
+
+  useEffect(() => {
+    return () => {
+      void cleanupActiveMatch();
+    };
+  }, [cleanupActiveMatch]);
   const endedByPeerRef = useRef(false);
 
   useEffect(() => {
@@ -436,18 +615,18 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
 
   // Connect to signaling channel when topic is provided
   useEffect(() => {
-    if (!topic) return;
+    if (!topic || !currentUserId) return;
 
     const channelName = `rtc:${mode}:${topic}`;
 
     const channel = supabase.channel(channelName, {
-      config: { presence: { key: clientId } },
+      config: { presence: { key: currentUserId } },
     });
 
     matchingChannelRef.current = channel;
     sendPresenceNow();
 
-    console.log('[RTC] Subscribing to channel', channelName, 'mode', mode, 'clientId', clientId);
+    console.log('[RTC] Subscribing to channel', channelName, 'mode', mode, 'userId', currentUserId);
 
     channel.on('system', { event: 'error' }, (payload?: { error?: unknown }) => {
       const message = describeSupabaseError(payload?.error ?? payload);
@@ -461,13 +640,26 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
         attemptMatch();
       })
       .on('broadcast', { event: 'pair' }, (msg) => {
-        const payload = msg.payload as { receiverId: string; roomId: string };
+        const payload = msg.payload as { receiverId: string; initiatorId: string; roomId: string };
         console.log('[RTC] Pair broadcast received', payload);
-        if (payload.receiverId === clientId && !roomIdRef.current) {
-          updateRoomId(payload.roomId);
-          updateStatus('connecting');
-          announcePresence('busy', payload.roomId);
+        if (payload.receiverId !== currentUserId || roomIdRef.current) return;
+
+        if (blockedUsersRef.current.has(payload.initiatorId)) {
+          console.log('[RTC] Ignoring blocked initiator', payload.initiatorId);
+          announcePresence('waiting', null);
+          return;
         }
+
+        if (blockedByUsersRef.current.has(payload.initiatorId)) {
+          console.log('[RTC] Initiator has blocked me; ignoring pair', payload.initiatorId);
+          announcePresence('waiting', null);
+          return;
+        }
+
+        updateRoomId(payload.roomId);
+        updatePeerUserId(payload.initiatorId);
+        updateStatus('connecting');
+        announcePresence('busy', payload.roomId);
       })
       .subscribe(async (subscriptionStatus) => {
         if (subscriptionStatus === 'SUBSCRIBED') {
@@ -489,7 +681,18 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       }
       channel.unsubscribe();
     };
-  }, [supabase, topic, mode, clientId, attemptMatch, announcePresence, sendPresenceNow, updateRoomId, updateStatus]);
+  }, [
+    supabase,
+    topic,
+    mode,
+    currentUserId,
+    attemptMatch,
+    announcePresence,
+    sendPresenceNow,
+    updateRoomId,
+    updateStatus,
+    updatePeerUserId,
+  ]);
 
   // Set up WebRTC when we have a room
   useEffect(() => {
@@ -531,12 +734,18 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       }
     };
 
-    const roomChannel = supabase.channel(`rtc:room:${roomId}`);
+    const roomChannel = supabase.channel(`rtc:room:${roomId}`, {
+      config: {
+        broadcast: { ack: true },
+      },
+    });
+    roomChannelRef.current = roomChannel;
 
     roomChannel.on('system', { event: 'error' }, (payload?: { error?: unknown }) => {
       const message = describeSupabaseError(payload?.error ?? payload);
       console.error('Supabase room channel error:', message);
       resetSessionState({ nextStatus: 'media-error', requeue: true });
+      roomChannelRef.current = null;
       roomChannel.unsubscribe();
     });
 
@@ -636,7 +845,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       .on('broadcast', { event: 'end_session' }, (msg) => {
         const payload = msg.payload as { roomId: string; senderId?: string };
         if (payload.roomId !== roomId) return;
-        if (payload.senderId === clientId) return;
+        if (payload.senderId === currentUserId) return;
 
         console.log('Remote peer ended the session');
         endedByPeerRef.current = true;
@@ -651,12 +860,13 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
         }
 
         resetSessionState({ nextStatus: 'waiting', requeue: true });
+        roomChannelRef.current = null;
         roomChannel.unsubscribe();
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           const [a] = roomId.split(':');
-          const isInitiator = clientId === a;
+          const isInitiator = currentUserId === a;
           if (isInitiator) await createOffer();
         }
       });
@@ -696,6 +906,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     };
 
     return () => {
+      roomChannelRef.current = null;
       roomChannel.unsubscribe();
       pc.close();
       pcRef.current = null;
@@ -707,7 +918,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   }, [
     supabase,
     roomId,
-    clientId,
+    currentUserId,
     mode,
     isChatMode,
     attachChatChannelHandlers,
@@ -882,21 +1093,19 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const end = () => {
     try {
       // Send end session message to the room channel if we have a roomId
-      if (roomId) {
-        const roomChannel = supabase.channel(`rtc:room:${roomId}`);
-        roomChannel
-          .send({
-            type: 'broadcast',
-            event: 'end_session',
-            payload: { roomId, senderId: clientId },
-          })
-          .then(() => {
-            // Wait a moment to ensure message is sent before closing
-            setTimeout(() => {
-              roomChannel.unsubscribe();
-            }, 300);
-          })
-          .catch(console.error);
+      if (roomId && currentUserId) {
+        const roomChannel = roomChannelRef.current;
+        if (roomChannel) {
+          roomChannel
+            .send({
+              type: 'broadcast',
+              event: 'end_session',
+              payload: { roomId, senderId: currentUserId },
+            })
+            .catch((error) => console.error('Failed to send end_session event:', error));
+        } else {
+          console.warn('Attempted to end session without an active room channel');
+        }
       }
 
       // Close the connection
@@ -962,6 +1171,11 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   return {
     status,
     mode,
+    roomId,
+    currentUserId,
+    peerUserId: activePeerUserId,
+    blockedUserIds,
+    blockedByUserIds,
     muted,
     setMuted,
     setAudioElementRef,
@@ -979,27 +1193,15 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     sendChatMessage,
     sendTypingStart,
     sendTypingStop,
+    markUserBlocked: appendBlockedUser,
   };
 }
 
-// Helper function to generate or retrieve client ID
-function getOrCreateClientId(): string {
-  // Only access localStorage on the client side
-  if (typeof window === 'undefined') {
-    return generateUUIDv4(); // Return a temporary ID during SSR
-  }
-
-  const key = 'rtc_client_id';
-  let id = localStorage?.getItem(key);
-  if (!id) {
-    id = generateUUIDv4();
-    try {
-      localStorage?.setItem(key, id);
-    } catch {
-      // ignore quota or privacy errors; ephemeral id is fine
-    }
-  }
-  return id;
+function buildRoomId(userA: string, userB: string, sessionMode: SessionMode): string {
+  const sortedPair = [userA, userB].sort();
+  const timestamp = Date.now().toString(36);
+  const nonce = generateUUIDv4();
+  return `${sortedPair.join(':')}:${sessionMode}:${timestamp}:${nonce}`;
 }
 
 // Simple UUID v4 generator
