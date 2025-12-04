@@ -4,14 +4,14 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 export const runtime = 'nodejs';
 
-export async function POST(_: Request, context: { params: { banId: string } }) {
+export async function POST(_: Request, context: { params: Promise<{ banId: string }> }) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
   }
 
   try {
-    const { banId } = context.params;
+    const { banId } = await context.params;
     const service = getSupabaseServiceClient();
     const now = new Date().toISOString();
 

@@ -6,7 +6,7 @@ import { isBanActive } from '@/lib/moderation/bans';
 
 export const runtime = 'nodejs';
 
-export async function GET(_: Request, context: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;

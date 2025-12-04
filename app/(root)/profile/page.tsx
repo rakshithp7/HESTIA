@@ -7,9 +7,9 @@ import { getVerifiedUser } from '@/lib/supabase/auth-utils';
 import { getUserById } from '@/lib/supabase/profile-service';
 
 type ProfilePageProps = {
-  searchParams?: {
+  searchParams: Promise<{
     section?: string;
-  };
+  }>;
 };
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {

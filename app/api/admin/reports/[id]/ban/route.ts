@@ -13,7 +13,7 @@ type BanPayload = {
   notes?: string;
 };
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
@@ -29,7 +29,7 @@ export async function POST(request: Request, context: { params: { id: string } }
       return NextResponse.json({ error: 'Custom bans require an end time' }, { status: 400 });
     }
 
-    const { id } = context.params;
+    const { id } = await context.params;
     const service = getSupabaseServiceClient();
 
     const { data: report, error: reportError } = await service

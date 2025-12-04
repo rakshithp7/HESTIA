@@ -67,6 +67,18 @@
   - Created `/admin/reports` dashboard with ban issuance/lift controls, transcript viewer, and resolution actions
   - Added client-side ban messaging and matchmaking guards so banned members see the remaining duration before rejoining
   - Surfaced admin navigation via the profile drawer and a dedicated `/admin` console that mirrors the profile layout while keeping tools separate
+- 2025-10-19: Fixed ban lift route handler typing
+
+  - Updated `app/api/admin/bans/[banId]/lift/route.ts` to await the async `params` context so Next.js type guards accept the POST handler signature
+  - Keeps moderator ban lifts functional after upgrading to the latest Next.js type plugin
+- 2025-10-19: Fixed ban issue route handler typing
+
+  - Updated `app/api/admin/reports/[id]/ban/route.ts` to await the async `params` context so issuing bans remains type-safe with the Next.js guard changes
+  - Ensures admin-issued bans continue working after the framework upgrade tightened handler validation
+- 2025-10-19: Fixed report detail and resolve handler typing
+
+  - Updated `app/api/admin/reports/[id]/route.ts` and `app/api/admin/reports/[id]/resolve/route.ts` to await the async params context expected by the latest Next.js route guard
+  - Keeps report detail fetches and resolution actions functioning without type errors post-upgrade
 - 2025-09-02: Implemented simplified WebRTC voice chat
 
   - Added WebRTC dependencies: `webrtc-adapter` and `detectrtc`

@@ -12,7 +12,7 @@ type ResolvePayload = {
 
 const RESOLVABLE_STATUSES: ModerationReportStatus[] = ['resolved', 'dismissed'];
 
-export async function POST(request: Request, context: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
@@ -26,7 +26,7 @@ export async function POST(request: Request, context: { params: { id: string } }
 
     const resolutionNotes = payload.notes?.trim() || null;
     const service = getSupabaseServiceClient();
-    const { id } = context.params;
+    const { id } = await context.params;
     const now = new Date().toISOString();
 
     const { data, error } = await service
