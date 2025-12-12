@@ -4,12 +4,15 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Phone, MessageSquare } from 'lucide-react';
+import { Phone, MessageSquare, Users, Globe } from 'lucide-react';
+import { useGlobalPresence } from '@/hooks/use-global-presence';
 
 export default function ConnectPage() {
   const router = useRouter();
   const [topic, setTopic] = useState('');
   const [mode, setMode] = useState<'voice' | 'chat' | null>(null);
+
+  const { peersOnline, activeTopicCount } = useGlobalPresence({ status: 'idle' });
 
   function onConnect() {
     if (!mode || topic.trim().length === 0) return;
@@ -25,7 +28,8 @@ export default function ConnectPage() {
   return (
     <div className="px-6 py-0 md:py-8 md:px-12">
       <div className="mx-auto max-w-xl mt-24 text-center space-y-8">
-        <h2 className="text-2xl md:text-4xl mb-8">What’s on your mind?</h2>
+        <h2 className="text-2xl md:text-4xl mb-4">What’s on your mind?</h2>
+
         <Input
           type="text"
           placeholder="Type here..."
@@ -67,12 +71,23 @@ export default function ConnectPage() {
 
         <Button
           variant="outline"
-          size="lg"
+          size="xl"
           className="mt-6"
           onClick={onConnect}
           disabled={!(mode && topic.trim().length > 0)}>
           Connect
         </Button>
+      </div>
+
+      <div className="flex items-center justify-center mt-12 gap-6 text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-700">
+        <div className="flex items-center gap-2">
+          <Users className="size-4" />
+          <span>{peersOnline} online</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Globe className="size-4" />
+          <span>{activeTopicCount} active topics</span>
+        </div>
       </div>
     </div>
   );

@@ -16,12 +16,14 @@ import AudioWaveform from '@/components/AudioWaveform';
 import { ChatSection } from '@/components/chat/ChatSection';
 import { useRTCSessionContext } from '@/lib/rtc-session-context';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { ActiveUserBan, Profile } from '@/lib/supabase/types';
 import { profileNeedsVerification } from '@/lib/verification';
 import { toast } from 'sonner';
 import { getBanRemainingSeconds } from '@/lib/moderation/bans';
+
+import { useGlobalPresence } from '@/hooks/use-global-presence';
 
 const REPORT_REASONS = [
   'Inappropriate behavior',
@@ -32,6 +34,9 @@ const REPORT_REASONS = [
 ] as const;
 
 export default function ConnectSessionPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const topic = searchParams.get('topic');
   const rtcHook = useRTCSessionContext();
   const {
     status,
@@ -57,6 +62,12 @@ export default function ConnectSessionPage() {
     markUserBlocked,
   } = rtcHook;
 
+  // Track global presence
+  useGlobalPresence({
+    status: 'active',
+    topic: topic || undefined,
+  });
+
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = React.useState(true);
@@ -66,7 +77,6 @@ export default function ConnectSessionPage() {
   const [banLoading, setBanLoading] = React.useState(true);
   const [banError, setBanError] = React.useState<string | null>(null);
 
-  const router = useRouter();
   const isChatMode = mode === 'chat';
   const isMatching = status === 'idle' || status === 'waiting' || status === 'connecting';
   const [mobilePanel, setMobilePanel] = React.useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
