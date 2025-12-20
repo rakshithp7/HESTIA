@@ -347,6 +347,10 @@ export default function ConnectSessionPage() {
     return <DisconnectingState />;
   }
 
+  if (status === 'ended' || status === 'media-error' || status === 'permission-denied' || status === 'no-mic') {
+    return <SessionEndedState status={status} onExit={handleDisconnect} />;
+  }
+
   if (isMatching) {
     return <MatchingState status={status} onCancel={handleDisconnect} />;
   }
@@ -611,6 +615,34 @@ function MatchingState({ status, onCancel }: { status: string; onCancel: () => v
         <Button type="button" variant="outline" size="sm" className="mt-4 gap-2" onClick={onCancel}>
           <XSquare className="size-4" />
           <span>Cancel</span>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SessionEndedState({ status, onExit }: { status: string; onExit: () => void }) {
+  const info = React.useMemo(() => {
+    switch (status) {
+      case 'media-error': return { title: 'Connection Failed', desc: 'We could not establish a media connection. This is likely a firewall or network issue.' };
+      case 'permission-denied': return { title: 'Microphone Denied', desc: 'Please allow microphone access to use this feature.' };
+      case 'no-mic': return { title: 'No Microphone', desc: 'We could not find a microphone on your device.' };
+      default: return { title: 'Session Ended', desc: 'The connection has been closed.' };
+    }
+  }, [status]);
+
+  return (
+    <div className="flex h-full w-full flex-1 items-center justify-center py-12">
+      <div className="flex flex-col items-center gap-6 text-center max-w-md px-6">
+        <div className="rounded-full bg-destructive/10 p-4">
+          <AlertTriangle className="size-8 text-destructive" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold tracking-wide">{info.title}</h2>
+          <p className="text-sm text-muted-foreground">{info.desc}</p>
+        </div>
+        <Button onClick={onExit} size="lg">
+          Return to Home
         </Button>
       </div>
     </div>
