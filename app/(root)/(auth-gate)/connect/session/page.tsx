@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect } from 'react';
-import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert, LucideLogOut, MoreHorizontal, Settings, Volume2, VolumeX } from 'lucide-react';
+import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -887,7 +887,7 @@ function SuggestedMatchDialog({
   onAccept,
   onReject
 }: {
-  suggestedMatch: any,
+  suggestedMatch: { topic: string; peerConsentedToMe: boolean } | null,
   onAccept?: () => Promise<void>,
   onReject?: () => void
 }) {
@@ -913,7 +913,7 @@ function SuggestedMatchDialog({
           <DialogTitle>No perfect match found</DialogTitle>
           <DialogDescription asChild className="space-y-2">
             <div className="text-sm text-muted-foreground">
-              <div>Hey we couldn't find you a great match... the closest topic we could find was "<b>{suggestedMatch?.topic}</b>".</div>
+              <div>Hey we couldn&apos;t find you a great match... the closest topic we could find was &quot;<b>{suggestedMatch?.topic}</b>&quot;.</div>
               {suggestedMatch?.peerConsentedToMe && (
                 <div className="flex items-center gap-2 text-green-600 font-medium bg-green-50 p-2 rounded-md">
                   <div className="relative flex h-2 w-2">

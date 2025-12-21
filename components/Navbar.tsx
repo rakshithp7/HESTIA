@@ -156,7 +156,7 @@ const Navbar = () => {
       {/* Mobile menu absolutely positioned with transition */}
       <div
         className={`
-          md:hidden flex flex-col items-center gap-4 py-4 transition-all duration-300 ease-in-out origin-top absolute left-0 right-0 top-full w-full bg-muted-foreground z-50
+          md:hidden flex flex-col items-center gap-4 py-4 transition-all duration-300 ease-in-out origin-top absolute left-0 right-0 top-full w-full bg-muted z-50 border-t border-muted-foreground/80
           ${open ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}
         `}>
         {/* Same links for mobile regardless of auth */}
