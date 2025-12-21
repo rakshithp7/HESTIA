@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Phone, MessageSquare, Users, Globe } from 'lucide-react';
+import { Phone, MessageSquare, Users } from 'lucide-react';
 import { useGlobalPresence } from '@/hooks/use-global-presence';
 
 export default function ConnectPage() {
@@ -12,7 +12,7 @@ export default function ConnectPage() {
   const [topic, setTopic] = useState('');
   const [mode, setMode] = useState<'voice' | 'chat' | null>(null);
 
-  const { peersOnline, activeTopicCount } = useGlobalPresence({ status: 'idle' });
+  const { peersOnline } = useGlobalPresence({ status: 'idle' });
 
   function onConnect() {
     if (!mode || topic.trim().length === 0) return;
@@ -84,10 +84,10 @@ export default function ConnectPage() {
           <Users className="size-4" />
           <span>{peersOnline} online</span>
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Globe className="size-4" />
           <span>{activeTopicCount} active topics</span>
-        </div>
+        </div> */}
       </div>
     </div>
   );

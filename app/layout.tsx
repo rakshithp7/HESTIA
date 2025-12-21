@@ -4,7 +4,7 @@ import localFont from 'next/font/local';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/Navbar';
-import { AppToaster } from '@/components/ui/sonner-toaster';
+import { Toaster } from '@/components/ui/sonner';
 
 const unna = Unna({
   variable: '--font-unna',
@@ -41,7 +41,7 @@ export default function RootLayout({
             <Navbar />
             {children}
           </div>
-          <AppToaster />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

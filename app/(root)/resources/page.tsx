@@ -68,8 +68,8 @@ export default function ResourcesPage() {
       const entries = titleMatches
         ? section.entries // Include all entries if title matches
         : section.entries.filter((entry) =>
-            [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery))
-          );
+          [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery))
+        );
       return { ...section, entries };
     }).filter((section) => {
       // Keep section if title matches OR if it has matching entries
@@ -116,7 +116,7 @@ export default function ResourcesPage() {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden md:grid md:grid-cols-3 gap-8">
+        <div className="hidden md:flex gap-8">
           <aside className="md:top-24 self-start">
             <ul className="space-y-3" role="list">
               {SECTIONS.map((s) => (
@@ -127,9 +127,8 @@ export default function ResourcesPage() {
                     onClick={() => setSelectedId(s.id)}
                     aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
                     disabled={queryActive}
-                    className={`text-left justify-start px-0 h-auto hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${
-                      selectedId === s.id && !queryActive ? 'text-primary underline' : ''
-                    }`}>
+                    className={`text-left justify-start px-0 h-auto hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
+                      }`}>
                     {s.title}
                   </Button>
                 </li>
@@ -137,7 +136,7 @@ export default function ResourcesPage() {
             </ul>
           </aside>
 
-          <section className="md:col-span-2 space-y-8 pr-2">
+          <section className="md:w-2/3 space-y-8 pr-2">
             {queryActive ? (
               filteredSections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">

@@ -15,8 +15,8 @@ export default function ContactPage() {
 
   return (
     <div className="my-12 md:mt-24 mx-8">
-      <div className="mx-auto max-w-5xl xl:max-w-6xl grid grid-cols-1 md:grid-cols-2 items-center place-content-center gap-10">
-        <div className="select-none font-difont text-[5rem] md:text-[8rem] leading-[0.9] tracking-wide">
+      <div className="mx-auto max-w-5xl xl:max-w-6xl flex flex-col md:flex-row items-center justify-center gap-10 md:gap-24">
+        <div className="select-none font-difont text-[5rem] md:text-[8rem] leading-[0.9] tracking-wide w-full md:w-1/2 text-center md:text-left">
           <p className="m-0">WE ARE</p>
           <p className="m-0">HERE TO</p>
           <p className="m-0 text-primary">
@@ -24,7 +24,7 @@ export default function ContactPage() {
           </p>
         </div>
 
-        <div className="w-full md:max-w-lg md:justify-self-center">
+        <div className="w-full md:w-1/2 md:max-w-md flex justify-center md:justify-end">
           <form onSubmit={onSubmit} className="space-y-4 w-full">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-base">
@@ -83,7 +83,7 @@ export default function ContactPage() {
                 alt="Logo"
                 width={90}
                 height={90}
-                className="object-contain absolute hidden md:inline-block -top-14 -right-16 rotate-4"
+                className="object-contain absolute hidden xl:inline-block -top-14 -right-16 rotate-4"
               />
             </div>
           </form>

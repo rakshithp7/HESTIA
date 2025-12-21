@@ -109,7 +109,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="w-full bg-muted-foreground px-4 py-2 relative">
+    <nav className="w-full bg-muted px-4 py-2 relative">
       <div className="flex items-center justify-between h-16">
         {/* Logo */}
         <div className="flex items-center min-w-[40px]">

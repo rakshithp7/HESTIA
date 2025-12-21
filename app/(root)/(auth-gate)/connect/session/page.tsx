@@ -1,6 +1,6 @@
 'use client';
-import React from 'react';
-import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert, LucideLogOut, MoreHorizontal, Settings, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -60,6 +60,9 @@ export default function ConnectSessionPage() {
     sendTypingStop,
     end,
     markUserBlocked,
+    suggestedMatch,
+    rejectSuggestedMatch,
+    acceptSuggestedMatch,
   } = rtcHook;
 
   // Track global presence
@@ -352,7 +355,21 @@ export default function ConnectSessionPage() {
   }
 
   if (isMatching) {
-    return <MatchingState status={status} onCancel={handleDisconnect} />;
+    return (
+      <>
+        <MatchingState status={status} onCancel={handleDisconnect} />
+        {/* Suggested Match Fallback Dialog */}
+        <SuggestedMatchDialog
+          suggestedMatch={suggestedMatch}
+          onAccept={acceptSuggestedMatch}
+          onReject={() => {
+            rejectSuggestedMatch();
+            // Fix Bug 2: If I cancel/close the suggestion, I should be removed from the queue.
+            handleDisconnect();
+          }}
+        />
+      </>
+    );
   }
 
   const hasVoiceSection = !isChatMode;
@@ -768,8 +785,6 @@ function VoiceSection({
         return { text: 'Mic denied', icon: null };
       case 'no-mic':
         return { text: 'No mic', icon: null };
-      case 'media-error':
-        return { text: 'Mic error', icon: null };
       case 'ended':
         return { text: 'Call ended', icon: null };
       default:
@@ -863,5 +878,70 @@ function VoiceSection({
         </div>
       </div>
     </div>
+  );
+}
+
+// Extracted Component to manage local loading state cleanly
+function SuggestedMatchDialog({
+  suggestedMatch,
+  onAccept,
+  onReject
+}: {
+  suggestedMatch: any,
+  onAccept?: () => Promise<void>,
+  onReject?: () => void
+}) {
+  const [isAccepting, setIsAccepting] = React.useState(false);
+
+  // Reset state when dialog closes or match changes
+  useEffect(() => {
+    if (!suggestedMatch) setIsAccepting(false);
+  }, [suggestedMatch]);
+
+  return (
+    <Dialog
+      open={!!suggestedMatch}
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsAccepting(false);
+          onReject?.();
+        }
+      }}
+    >
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle>No perfect match found</DialogTitle>
+          <DialogDescription asChild className="space-y-2">
+            <div className="text-sm text-muted-foreground">
+              <div>Hey we couldn't find you a great match... the closest topic we could find was "<b>{suggestedMatch?.topic}</b>".</div>
+              {suggestedMatch?.peerConsentedToMe && (
+                <div className="flex items-center gap-2 text-green-600 font-medium bg-green-50 p-2 rounded-md">
+                  <div className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </div>
+                  Your peer wants to connect!
+                </div>
+              )}
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => onReject?.()} disabled={isAccepting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              setIsAccepting(true);
+              await onAccept?.();
+            }}
+            disabled={isAccepting}
+          >
+            {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {suggestedMatch?.peerConsentedToMe ? "Accept & Connect" : (isAccepting ? "Waiting for peer..." : "Connect")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

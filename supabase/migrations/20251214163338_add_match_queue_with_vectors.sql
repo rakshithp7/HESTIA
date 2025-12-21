@@ -10,23 +10,10 @@ create table if not exists match_queue (
   status text not null default 'waiting' check (status in ('waiting', 'matched')),
   mode text not null default 'chat',
   room_id text, -- ID of the room to join when matched
+  consented_queue_id uuid, -- Added for mutual consent logic
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
-
--- Ensure columns exist (idempotent for existing tables)
-do $$
-begin
-  if not exists (select 1 from information_schema.columns where table_name = 'match_queue' and column_name = 'room_id') then
-    alter table match_queue add column room_id text;
-  end if;
-  if not exists (select 1 from information_schema.columns where table_name = 'match_queue' and column_name = 'mode') then
-    alter table match_queue add column mode text not null default 'chat';
-  end if;
-  if not exists (select 1 from information_schema.columns where table_name = 'match_queue' and column_name = 'topic_embedding') then
-    alter table match_queue add column topic_embedding vector(768);
-  end if;
-end $$;
 
 -- Index for faster vector search
 create index if not exists match_queue_topic_embedding_idx on match_queue using ivfflat (topic_embedding vector_cosine_ops)
@@ -47,10 +34,23 @@ create policy "Users can view their own match requests"
   on match_queue for select
   using (auth.uid() = user_id);
 
+-- Policy: Users can view waiting match requests (for discovery/client-side checks)
+drop policy if exists "Users can view waiting match requests" on match_queue;
+create policy "Users can view waiting match requests"
+  on match_queue for select
+  to authenticated
+  using (status = 'waiting');
+
 -- Policy: Users can update their own requests
 drop policy if exists "Users can update their own match requests" on match_queue;
 create policy "Users can update their own match requests"
   on match_queue for update
+  using (auth.uid() = user_id);
+
+-- Policy: Users can delete their own match requests
+drop policy if exists "Users can delete their own match requests" on match_queue;
+create policy "Users can delete their own match requests"
+  on match_queue for delete
   using (auth.uid() = user_id);
 
 -- CRITICAL: Add to publication for Realtime
@@ -71,9 +71,52 @@ end $$;
 -- Cleanup old function signatures if they exist to prevent overloading confusion
 drop function if exists find_match(uuid, vector(768), text, float);
 drop function if exists find_match(uuid, vector(768), text, uuid[], float);
+drop function if exists debug_matches(uuid, vector(768), text);
+
+-- Debug Function to inspect similarity scores and consent
+create or replace function debug_matches(
+  p_user_id uuid,
+  p_topic_embedding vector(768),
+  p_mode text,
+  p_my_queue_id uuid default null
+)
+returns table (
+  queue_id uuid, -- Added queue_id to return
+  topic text,
+  similarity float,
+  peer_consented_to_me boolean -- Added to return consent status
+)
+language plpgsql
+security definer
+as $$
+declare
+    v_my_queue_record record;
+begin
+  -- Get my record to check for consents against me
+  select * into v_my_queue_record from match_queue where id = p_my_queue_id;
+
+  return query
+  select
+    mq.id as queue_id,
+    mq.topic,
+    (1 - (mq.topic_embedding <=> p_topic_embedding))::float as similarity,
+    case
+      when p_my_queue_id is not null then (mq.consented_queue_id = p_my_queue_id)
+      else false
+    end as peer_consented_to_me
+  from match_queue mq
+  where mq.mode = p_mode
+    and mq.user_id != p_user_id
+    and mq.status = 'waiting'
+    -- FILTER STALE USERS: Must have heartbeated recently
+    and mq.updated_at > now() - interval '15 seconds'
+  order by similarity desc
+  limit 5;
+end;
+$$;
 
 
--- Function to find a match
+-- Optimistic Fix for find_match RPC to prevent deadlocks and race conditions
 create or replace function find_match(
   p_user_id uuid,
   p_topic_embedding vector(768),
@@ -92,91 +135,101 @@ as $$
 declare
   v_match record;
   v_room_id text;
+  v_my_queue_record record;
+  v_is_match_found boolean := false;
+  v_updated_count int;
 begin
-  -- Lazy Cleanup: Remove any request that hasn't heartbeated in 2 minutes
+  -- Lazy Cleanup: Remove any request that hasn't heartbeated in 20 seconds
   delete from match_queue
-  where updated_at < now() - interval '2 minutes';
+  where updated_at < now() - interval '20 seconds';
 
-  -- 1. Lock the Caller's row to ensure they are still waiting
-  -- If we can't lock it (someone else matched us?), simply return nothing.
-  perform 1 from match_queue 
+  -- 1. Get My ID/Status (No Lock - Optimistic Read)
+  select * into v_my_queue_record
+  from match_queue 
   where user_id = p_user_id and status = 'waiting' 
-  for update nowait;
+  limit 1;
   
-  -- If performs fails (row locked or not found), we might want to exit? 
-  -- Actually, let's just proceed. The final update will fail if conditions met.
+  if v_my_queue_record.id is null then
+     -- caller not found or not waiting
+     return query select false, null::text, null::uuid;
+     return;
+  end if;
 
-  -- 2. Find the best match
-  select 
-    id, 
-    user_id
-  into v_match
-  from match_queue
-  where status = 'waiting'
-    and mode = p_mode
-    and user_id != p_user_id
-    and not (user_id = any(p_excluded_user_ids))
-    and 1 - (topic_embedding <=> p_topic_embedding) > p_threshold
-  order by topic_embedding <=> p_topic_embedding asc
-  limit 1
-  for update skip locked;
+  -- 2. Priority Check: Mutual Consent (No Lock - Optimistic Read)
+  if v_my_queue_record.consented_queue_id is not null then
+    select 
+      id, 
+      user_id
+    into v_match
+    from match_queue
+    where id = v_my_queue_record.consented_queue_id
+      and status = 'waiting'
+      and consented_queue_id = v_my_queue_record.id -- They must point back to me
+      and updated_at > now() - interval '15 seconds' -- Ensure they are alive
+    limit 1;
+    
+    if found then
+      v_is_match_found := true;
+    end if;
+  end if;
 
-  if v_match.id is not null then
+  -- 3. If no mutual consent match, Find the best semantic match (No Lock - Optimistic Read)
+  if not v_is_match_found then
+    select 
+      id, 
+      user_id
+    into v_match
+    from match_queue
+    where status = 'waiting'
+      and mode = p_mode
+      and user_id != p_user_id
+      and not (user_id = any(p_excluded_user_ids))
+      and 1 - (topic_embedding <=> p_topic_embedding) > p_threshold
+      and updated_at > now() - interval '15 seconds' -- Ensure they are alive
+    order by topic_embedding <=> p_topic_embedding asc
+    limit 1;
+    
+    if found then
+      v_is_match_found := true;
+    end if;
+  end if;
+
+  if v_is_match_found then
     -- Generate simple room ID
     v_room_id := 'room_' || encode(gen_random_bytes(12), 'hex');
     
-    -- 3. Atomic Update: Mark BOTH as matched
+    -- 4. Atomic Update: Mark BOTH as matched
+    -- We use a single UPDATE statement to minimize deadlock risk, relying on Postgres internal locking order.
+    -- If a deadlock occurs, we catch it and return false (letting the other transaction win or retry).
     
-    -- Update Peer
-    update match_queue 
-    set status = 'matched', room_id = v_room_id
-    where id = v_match.id;
+    with updates as (
+        update match_queue 
+        set status = 'matched', room_id = v_room_id
+        where id in (v_my_queue_record.id, v_match.id)
+          and status = 'waiting' -- Ensure they are STILL waiting
+        returning id
+    )
+    select count(*) into v_updated_count from updates;
 
-    -- Update Caller (Self)
-    -- This ensures that when this RPC returns, the caller is ALSO officially 'matched'
-    -- This triggers the Realtime event for the caller too (though they get the return value)
-    update match_queue
-    set status = 'matched', room_id = v_room_id
-    where user_id = p_user_id and status = 'waiting';
-
-    return query select 
-      true as match_found,
-      v_room_id as match_room_id,
-      v_match.user_id as peer_user_id;
+    if v_updated_count = 2 then
+        -- Success! Both updated.
+        return query select 
+          true as match_found,
+          v_room_id as match_room_id,
+          v_match.user_id as peer_user_id;
+    else
+        -- Failed to grab both (race condition). 
+        -- Likely one was taken by someone else or cancelled.
+        return query select false, null::text, null::uuid;
+    end if;
+  else
+    return query select false, null::text, null::uuid;
   end if;
 
-  return query select false, null::text, null::uuid;
 EXCEPTION 
-  WHEN lock_not_available THEN
-    -- If we couldn't lock our own row, it means we are being matched by someone else right now!
-    -- Return false, and let the other process handle it.
+  WHEN deadlock_detected THEN
+    -- If we deadlock, it means another transaction (likely the peer finding us) is working.
+    -- We simply yield.
     return query select false, null::text, null::uuid;
-end;
-$$;
-
--- Debug Function to inspect similarity scores
-create or replace function debug_matches(
-  p_user_id uuid,
-  p_topic_embedding vector(768),
-  p_mode text
-)
-returns table (
-  topic text,
-  similarity float
-)
-language plpgsql
-security definer
-as $$
-begin
-  return query
-  select
-    match_queue.topic,
-    (1 - (match_queue.topic_embedding <=> p_topic_embedding))::float as similarity
-  from match_queue
-  where mode = p_mode
-    and user_id != p_user_id
-    and status = 'waiting'
-  order by similarity desc
-  limit 5;
 end;
 $$;
