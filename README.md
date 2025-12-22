@@ -1,14 +1,17 @@
-> ⚠️ **In Development:** Active work in progress; finalizing responsiveness and matching logic.
+> ⚠️  **Under Development**
 
 <p align="center">
   <img src="./public/logo.svg" alt="Hestia logo" width="180">
 </p>
 <p align="center">
   <a href="https://nextjs.org/docs">
-    <img src="https://img.shields.io/badge/Next.js-15.3.2-black?logo=next.js" alt="Next.js 15.3.2">
+    <img src="https://img.shields.io/badge/Next.js-15.3.6-black?logo=next.js" alt="Next.js 15.3.6">
   </a>
   <a href="https://supabase.com/docs/guides/realtime">
     <img src="https://img.shields.io/badge/Supabase-Realtime%20Chat-3FCF8E?logo=supabase&logoColor=white" alt="Supabase Realtime">
+  </a>
+  <a href="https://ai.google.dev/">
+    <img src="https://img.shields.io/badge/Google%20Gemini-Embeddings-8E75B2?logo=google-cloud&logoColor=white" alt="Google Gemini">
   </a>
   <a href="https://docs.stripe.com/identity">
     <img src="https://img.shields.io/badge/Stripe-Identity-635BFF?logo=stripe&logoColor=white" alt="Stripe Identity">
@@ -24,28 +27,29 @@ Hestia offers a safe, anonymous space where community members are matched by age
 
 ## Key Features
 
-- Age verification powered by Stripe Identity with Supabase profile storage for gated access.
-- WebRTC-based voice and text sessions with live waveform feedback, presence, and peer typing indicators.
-- Resource directory with responsive desktop and mobile layouts plus full-text search.
-- Accessible marketing pages (home, about, contact) with shadcn UI components and theme-aware styling.
-- Friendly, theme-aware 404 fallback experience featuring animation via dotLottie assets.
+- **Semantic Matching**: Real-time topic matching powered by Google Gemini embeddings (`gemini-embedding-001`) ensures users find peers with similar interests.
+- **Identity Verification**: Age verification via Stripe Identity with Supabase profile storage for gated access.
+- **Live Sessions**: WebRTC-based voice and text sessions with live waveform feedback, presence, and peer typing indicators.
+- **Resource Directory**: Responsive desktop and mobile layouts plus full-text search for mental health resources.
+- **Modern UI**: Accessible designs using shadcn UI, Tailwind v4, and theme-aware styling (light/dark mode).
+- **Friendly UX**: Custom animations via dotLottie for a polished, welcoming experience.
 
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router) with React 19 and TypeScript.
 - **Styling**: Tailwind CSS v4, custom fonts, shadcn/ui primitives, lucide-react icons.
-- **Realtime & Data**: Supabase (Auth, Database, Realtime), custom hooks for matching and chat.
+- **AI & Data**: `@google/genai` SDK for embeddings, Supabase (Auth, Database, Realtime) for backend and vectors.
 - **Identity**: Stripe Identity for secure document verification and webhook-driven status updates.
 - **Tooling**: ESLint 9, WebRTC adapter, DetectRTC, Netlify deploy configuration.
 
 ## Architecture Highlights
 
-- `app/`: Route segments including authenticated gates, resources, about, contact, and verification flows.
-- `lib/webrtc`: `useRTCSession` hook orchestrates matching, peer connection, chat data channels, and media streams.
+- `app/api/ai/embed`: Serverless route generating 768-dimensional embeddings via Gemini for topic matching.
+- `lib/webrtc`: `useRTCSession` hook orchestrates matchmaking, peer connection, chat data channels, and media streams.
 - `lib/verification` and `app/api/identity/*`: Server-side logic for Stripe webhook handling and verification management.
 - `lib/env`: Strict runtime validation for server and public environment variables.
 - `components/`: shadcn-based UI primitives plus custom chat, audio waveform, and layout building blocks.
-- `supabase/migrations`: SQL migrations for profiles, verification metadata, and future schema evolutions.
+- `supabase/migrations`: SQL migrations for profiles, verification metadata, and vector schema.
 
 ## Getting Started
 
@@ -70,6 +74,7 @@ Configure the following in `.env.local` (client-side keys must be prefixed with 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
+GEMINI_API_KEY=your-google-gemini-api-key
 STRIPE_SECRET_KEY=sk_live_or_test_key
 STRIPE_IDENTITY_RESTRICTED_KEY=rk_live_or_test_key
 STRIPE_IDENTITY_RETURN_URL=https://your-domain.com/verify
