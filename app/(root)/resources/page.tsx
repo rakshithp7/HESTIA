@@ -1,6 +1,6 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import { Search, ExternalLink } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
@@ -27,10 +27,27 @@ function highlightText(text: string, query: string): React.ReactNode {
   );
 }
 
+function ResourceLine({ text, highlightQuery }: { text: string; highlightQuery: string }) {
+  const isUrl = text.startsWith('http');
+  if (isUrl) {
+    return (
+      <a
+        href={text}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-primary hover:underline flex items-center gap-1 w-fit">
+        {highlightText(text, highlightQuery)}
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    );
+  }
+  return <div className="text-sm leading-relaxed">{highlightText(text, highlightQuery)}</div>;
+}
+
 function SectionDetails({ section, highlightQuery }: { section: ResourceSection; highlightQuery: string }) {
   return (
     <div>
-      <h2 className="text-xl md:text-2xl mb-2">{highlightText(section.title, highlightQuery)}</h2>
+      <h2 className="text-3xl md:text-4xl font-medium mb-6">{highlightText(section.title, highlightQuery)}</h2>
       <div className="space-y-4">
         {section.entries.length === 0 ? (
           <p className="text-sm">Coming soon.</p>
@@ -39,9 +56,7 @@ function SectionDetails({ section, highlightQuery }: { section: ResourceSection;
             <div key={entry.name}>
               <h3 className="text-lg font-semibold">{highlightText(entry.name, highlightQuery)}</h3>
               {entry.lines.map((line, index) => (
-                <p key={index} className="text-sm">
-                  {highlightText(line, highlightQuery)}
-                </p>
+                <ResourceLine key={index} text={line} highlightQuery={highlightQuery} />
               ))}
             </div>
           ))
@@ -174,7 +189,7 @@ export default function ResourcesPage() {
               {filteredSections.map((section) => (
                 <AccordionItem key={section.id} value={section.id}>
                   <AccordionTrigger className="text-left">
-                    <span className="text-lg font-medium">{highlightText(section.title, highlightQuery)}</span>
+                    <span className="text-xl font-medium">{highlightText(section.title, highlightQuery)}</span>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-4 pt-2">
@@ -183,11 +198,9 @@ export default function ResourcesPage() {
                       ) : (
                         section.entries.map((e) => (
                           <div key={e.name} className="space-y-2">
-                            <h3 className="text-base font-semibold">{highlightText(e.name, highlightQuery)}</h3>
+                            <h3 className="text-lg font-semibold">{highlightText(e.name, highlightQuery)}</h3>
                             {e.lines.map((line, i) => (
-                              <p key={i} className="text-sm leading-relaxed">
-                                {highlightText(line, highlightQuery)}
-                              </p>
+                              <ResourceLine key={i} text={line} highlightQuery={highlightQuery} />
                             ))}
                           </div>
                         ))
