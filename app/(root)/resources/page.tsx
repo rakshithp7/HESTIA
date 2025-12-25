@@ -48,7 +48,7 @@ function SectionDetails({ section, highlightQuery }: { section: ResourceSection;
   return (
     <div>
       <h2 className="text-3xl md:text-4xl font-medium mb-6">{highlightText(section.title, highlightQuery)}</h2>
-      <div className="space-y-4">
+      <div className="space-y-8">
         {section.entries.length === 0 ? (
           <p className="text-sm">Coming soon.</p>
         ) : (
@@ -192,7 +192,7 @@ export default function ResourcesPage() {
                     <span className="text-xl font-medium">{highlightText(section.title, highlightQuery)}</span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-8 pt-2">
                       {section.entries.length === 0 ? (
                         <p className="text-sm">Coming soon.</p>
                       ) : (

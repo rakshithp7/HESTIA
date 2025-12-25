@@ -7,7 +7,7 @@ import { FAQ_ITEMS } from '@/data/faq';
 
 function FaqContent({ faq }: { faq: FAQItem }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <h4 className="text-2xl md:text-3xl mb-2">{faq.heading}</h4>
       {faq.paragraphs?.map((text, index) => (
         <p key={index} className="text-lg leading-relaxed">

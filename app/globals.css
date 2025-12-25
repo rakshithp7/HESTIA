@@ -58,7 +58,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #98b4bd;
+  --background: #b3d0da;
   /* Gull Gray */
   --foreground: #1e2c33;
   /* Ebony Clay */
@@ -66,12 +66,12 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #236971;
+  --primary: #1c575e;
   /* Elm */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: #a284a1;
   --secondary-foreground: oklch(0.33 0 0);
-  --muted: #738b93;
+  --muted: #819da6;
   --muted-foreground: #516369;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
@@ -96,7 +96,7 @@
 
 .dark {
   --background: #1e2c33;
-  --foreground: #98b4bd;
+  --foreground: #b6d4de;
   /* Gull Gray */
   --card: oklch(0.205 0 0);
   --card-foreground: #98b4bd;
@@ -106,7 +106,7 @@
   /* Gull Gray */
   --primary: #c29ec1;
   /* Lilac */
-  --primary-foreground: #1e2c33;
+  --primary-foreground: #152025;
   /* Gull Gray */
   --secondary: #537692;
   /* Kashmir Blue */
