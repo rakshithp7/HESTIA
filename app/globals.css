@@ -53,6 +53,7 @@
 
   /* custom breakpoints */
   --breakpoint-md: 900px;
+  --max-width-8xl: 96rem;
 }
 
 :root {
@@ -156,6 +157,26 @@
 
   .screen-height {
     height: var(--spacing-page-min);
+  }
+
+  .scrollbar-thin {
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--muted);
+      border-radius: 9999px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: var(--muted-foreground);
+    }
   }
 }
 

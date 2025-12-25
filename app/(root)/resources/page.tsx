@@ -100,7 +100,7 @@ export default function ResourcesPage() {
 
   return (
     <div className="px-6 py-8 md:px-12">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-8xl">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl md:text-4xl mb-4">Resources</h1>
           <div className="relative mb-3">
@@ -116,8 +116,8 @@ export default function ResourcesPage() {
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden md:flex gap-8">
-          <aside className="md:top-24 self-start">
+        <div className="hidden md:flex gap-8 h-[calc(100vh-14rem)]">
+          <aside className="md:top-24 self-start w-1/4">
             <ul className="space-y-3" role="list">
               {SECTIONS.map((s) => (
                 <li key={s.id}>
@@ -127,7 +127,7 @@ export default function ResourcesPage() {
                     onClick={() => setSelectedId(s.id)}
                     aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
                     disabled={queryActive}
-                    className={`text-left justify-start px-0 h-auto hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
+                    className={`text-left justify-start px-0 h-auto whitespace-normal hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
                       }`}>
                     {s.title}
                   </Button>
@@ -136,7 +136,7 @@ export default function ResourcesPage() {
             </ul>
           </aside>
 
-          <section className="md:w-2/3 space-y-8 pr-2">
+          <section className="flex-1 space-y-8 pr-2 h-full overflow-y-auto scrollbar-thin">
             {queryActive ? (
               filteredSections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
