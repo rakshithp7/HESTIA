@@ -67,7 +67,7 @@ export function VoiceSection({
     <div className="flex flex-col gap-4 h-full w-full">
       {/* Peer Voice Panel */}
       <div className="relative rounded-2xl border-2 border-secondary p-4 h-1/2">
-        <div className="absolute left-2 top-2 text-xs opacity-70">Peer</div>
+        <div className="absolute left-2 top-2 text-base opacity-70">Peer</div>
         <div className="flex flex-col items-center justify-center pt-6 h-full">
           {status === 'connected' ? (
             <AudioWaveform
@@ -88,7 +88,7 @@ export function VoiceSection({
 
       {/* Your Voice Panel */}
       <div className="relative rounded-2xl border-2 border-primary p-4 h-1/2">
-        <div className="absolute right-2 top-2 text-xs opacity-70">You</div>
+        <div className="absolute right-2 top-2 text-base opacity-70">You</div>
         <div className="flex flex-col items-center justify-center pt-6 h-full">
           {micReady ? (
             <>

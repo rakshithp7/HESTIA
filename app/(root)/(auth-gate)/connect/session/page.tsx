@@ -194,7 +194,7 @@ export default function ConnectSessionPage() {
 
             <div
               className={cn(
-                'flex min-h-0 h-full flex-1 flex-col rounded-xl border-muted-foreground/20 border-2',
+                'flex min-h-0 h-full flex-1 flex-col rounded-xl border-muted-foreground/10 border-2',
                 isChatMode ? 'w-full' : 'md:w-3/4',
                 !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
               )}>
@@ -488,7 +488,7 @@ function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
         <Button
           variant="outline"
           aria-label="End Session"
-          className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
+          className="flex flex-col h-fit w-[120px] p-4 text-destructive border-destructive hover:bg-destructive/40 hover:text-white"
           onClick={onDisconnect}>
           <XSquare className="size-6 text-destructive" />
           <span className="text-base opacity-80 text-center leading-tight whitespace-normal">End Session</span>
@@ -496,7 +496,7 @@ function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
         <Button
           variant="outline"
           aria-label="Report an Issue"
-          className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
+          className="flex flex-col h-fit w-[120px] p-4 hover:bg-primary hover:text-accent"
           onClick={onReport}>
           <AlertTriangle className="size-6" />
           <span className="text-base opacity-80 text-center leading-tight whitespace-normal">Report an Issue</span>
