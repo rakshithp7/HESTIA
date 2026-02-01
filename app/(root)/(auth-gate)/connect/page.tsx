@@ -4,7 +4,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Phone, MessageSquare, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { PhoneCall } from '@/components/animate-ui/icons/phone-call';
+import { MessageSquareMoreIcon } from '@/components/animate-ui/icons/message-square-more';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 import { useGlobalPresence } from '@/hooks/use-global-presence';
 
 export default function ConnectPage() {
@@ -28,7 +31,7 @@ export default function ConnectPage() {
   return (
     <div className="px-6 py-0 md:py-8 md:px-12">
       <div className="mx-auto max-w-xl mt-24 text-center space-y-8">
-        <h2 className="text-3xl mb-8">What's on your mind?</h2>
+        <h2 className="text-3xl mb-8">What&apos;s on your mind?</h2>
 
         <Input
           type="text"
@@ -48,7 +51,10 @@ export default function ConnectPage() {
                   aria-label="Call"
                   className={`size-40 md:size-48 ${mode === 'voice' ? 'border-primary bg-primary/20' : ''}`}
                   onClick={() => setMode('voice')}>
-                  <Phone className="size-20 md:size-24" />
+                  {/* <PhoneCall className='size-20 md:size-24' animateOnHover /> */}
+                  <AnimateIcon animateOnHover >
+                    <PhoneCall className='size-20 md:size-24'/>
+                  </AnimateIcon>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className='text-base'>Start a voice & chat session</TooltipContent>
@@ -61,7 +67,9 @@ export default function ConnectPage() {
                   aria-label="Chat"
                   className={`size-40 md:size-48 ${mode === 'chat' ? 'border-primary bg-primary/20' : ''}`}
                   onClick={() => setMode('chat')}>
-                  <MessageSquare className="size-20 md:size-24" />
+                  <AnimateIcon animateOnHover>
+                    <MessageSquareMoreIcon className="size-20 md:size-24" />
+                  </AnimateIcon>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className='text-base'>Start a chat only session</TooltipContent>

@@ -338,20 +338,20 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
                         <span
                           className={
                             emailUnconfirmed && !signUpSuccess
-                              ? 'text-xs text-amber-700 dark:text-amber-400'
-                              : 'text-xs text-green-700 dark:text-green-400'
+                              ? 'text-sm text-amber-700 dark:text-amber-400'
+                              : 'text-sm text-green-700 dark:text-green-400'
                           }>
                           You can resend in {formatCooldown(resendCooldown)}.
                         </span>
                       ) : null}
                     </div>
-                    {resendError ? <p className="text-xs text-destructive">{resendError}</p> : null}
+                    {resendError ? <p className="text-sm text-destructive">{resendError}</p> : null}
                     {resendSuccessMessage ? (
                       <p
                         className={
                           emailUnconfirmed && !signUpSuccess
-                            ? 'text-xs text-amber-700 dark:text-amber-400'
-                            : 'text-xs text-green-700 dark:text-green-400'
+                            ? 'text-sm text-amber-700 dark:text-amber-400'
+                            : 'text-sm text-green-700 dark:text-green-400'
                         }>
                         {resendSuccessMessage}
                       </p>
