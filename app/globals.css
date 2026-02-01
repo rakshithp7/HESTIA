@@ -18,6 +18,7 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-difont: var(--font-difont);
   --font-unna: var(--font-unna);
+  --font-dyslexic: var(--font-dyslexic);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -135,6 +136,58 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* High Contrast Overrides - Theme Aware */
+
+/* Light Mode High Contrast */
+:root.high-contrast {
+  /* Darken foregrounds for max contrast against light background */
+  --foreground: #000000;
+  --card-foreground: #000000;
+  --popover-foreground: #000000;
+  
+  /* Primary: Darker shade of Elm (#1c575e) -> #0f3034 */
+  --primary: #0f3034; 
+  --primary-foreground: #ffffff;
+  
+  /* Secondary: Darker shade of Lilac (#a284a1) -> #5e465d */
+  --secondary: #5e465d;
+  --secondary-foreground: #ffffff;
+  
+  --muted-foreground: #000000;
+  
+  --accent: #0f3034; /* Use Primary Dark for accent */
+  --accent-foreground: #ffffff;
+  
+  --border: #000000;
+  --input: #ffffff;
+  --ring: #0f3034;
+}
+
+/* Dark Mode High Contrast */
+.dark:root.high-contrast {
+  /* Highlight foregrounds for max contrast against dark background */
+  --foreground: #ffffff;
+  --card-foreground: #ffffff;
+  --popover-foreground: #ffffff;
+  
+  /* Primary: Lighter shade of Lilac (#c29ec1) -> #ead4ea */
+  --primary: #ead4ea;
+  --primary-foreground: #000000;
+  
+  /* Secondary: Lighter shade of Kashmir Blue (#537692) -> #b3d1eb */
+  --secondary: #b3d1eb;
+  --secondary-foreground: #000000;
+  
+  --muted-foreground: #ffffff;
+  
+  --accent: #ead4ea; /* Use Primary Light for accent */
+  --accent-foreground: #000000;
+  
+  --border: #ffffff;
+  --input: #000000;
+  --ring: #ead4ea;
+} 
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -146,6 +199,20 @@
 
   * {
     transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out, border-color 0.1s ease-in-out;
+  }
+
+  body.font-dyslexic * {
+    font-family: var(--font-dyslexic) !important;
+    font-size-adjust: 0.4;
+  }
+
+  body.font-dyslexic .font-difont.preserve-font {
+    font-family: var(--font-difont) !important;
+    font-size-adjust: none;
+  }
+
+  body.font-dyslexic nav * {
+    font-size-adjust: 0.3;
   }
 }
 

@@ -8,7 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+import { useAccessibility } from '@/components/providers/accessibility-provider';
+
 export default function ContactPage() {
+  const { dyslexicFont } = useAccessibility();
+
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
   }
@@ -16,7 +20,7 @@ export default function ContactPage() {
   return (
     <div className="my-12 md:mt-24 mx-8">
       <div className="mx-auto max-w-5xl xl:max-w-6xl flex flex-col md:flex-row items-center justify-center gap-10 md:gap-24">
-        <div className="select-none font-difont text-[5rem] md:text-[8rem] leading-[0.9] tracking-wide w-full md:w-1/2 text-center md:text-left">
+        <div className={`select-none font-difont ${dyslexicFont ? 'text-[3rem] md:text-[5rem]' : 'text-[5rem] md:text-[8rem]'} leading-[0.9] tracking-wide w-full md:w-1/2 text-center md:text-left`}>
           <p className="m-0">WE ARE</p>
           <p className="m-0">HERE TO</p>
           <p className="m-0 text-primary">

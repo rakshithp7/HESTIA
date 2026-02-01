@@ -1,37 +1,23 @@
 'use client';
-import React, { useEffect } from 'react';
-import { MicOff, Loader2, Mic, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Loader2, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import AudioWaveform from '@/components/AudioWaveform';
 import { ChatSection } from '@/components/chat/ChatSection';
 import { useRTCSessionContext } from '@/lib/rtc-session-context';
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import type { ActiveUserBan, Profile } from '@/lib/supabase/types';
+import type { ActiveUserBan } from '@/lib/supabase/types';
 import { profileNeedsVerification } from '@/lib/verification';
-import { toast } from 'sonner';
 import { getBanRemainingSeconds } from '@/lib/moderation/bans';
-
 import { useGlobalPresence } from '@/hooks/use-global-presence';
 
-const REPORT_REASONS = [
-  'Inappropriate behavior',
-  'Harassment or bullying',
-  'Hate speech',
-  'Spam or self-promotion',
-  'Safety concern',
-] as const;
+import { useProfileVerification } from '@/hooks/use-profile-verification';
+import { useBanCheck } from '@/hooks/use-ban-check';
+import { useSessionReport } from '@/hooks/use-session-report';
+import { VoiceSection } from './components/VoiceSection';
+import { ReportDialog } from './components/ReportDialog';
+import { SuggestedMatchDialog } from './components/SuggestedMatchDialog';
 
 export default function ConnectSessionPage() {
   const router = useRouter();
@@ -71,175 +57,49 @@ export default function ConnectSessionPage() {
     topic: topic || undefined,
   });
 
-  const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
-  const [profile, setProfile] = React.useState<Profile | null>(null);
-  const [profileLoading, setProfileLoading] = React.useState(true);
-  const [profileError, setProfileError] = React.useState<string | null>(null);
-  const [userId, setUserId] = React.useState<string | null>(null);
-  const [activeBan, setActiveBan] = React.useState<ActiveUserBan | null>(null);
-  const [banLoading, setBanLoading] = React.useState(true);
-  const [banError, setBanError] = React.useState<string | null>(null);
+  const {
+    profile,
+    loading: profileLoading,
+    error: profileError,
+    userId,
+    refetch: refetchProfile,
+  } = useProfileVerification();
+
+  const {
+    activeBan,
+    loading: banLoading,
+    error: banError,
+    refetch: refetchBan,
+  } = useBanCheck(userId);
+
+  const {
+    isOpen: isReportOpen,
+    openReport: handleReport,
+    onOpenChange: handleReportDialogChange,
+    reasons: reportReasons,
+    toggleReason: handleToggleReportReason,
+    notes: reportNotes,
+    setNotes: setReportNotes,
+    isSubmitting: isSubmittingReport,
+    submitReport: handleReportSubmit,
+  } = useSessionReport({
+    roomId,
+    peerUserId,
+    chatMessages,
+    markUserBlocked,
+    end,
+  });
 
   const isChatMode = mode === 'chat';
   const isMatching = status === 'idle' || status === 'waiting' || status === 'connecting';
-  const [mobilePanel, setMobilePanel] = React.useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
-  const [isDisconnecting, setIsDisconnecting] = React.useState(false);
-  const [isReportOpen, setIsReportOpen] = React.useState(false);
-  const [reportReasons, setReportReasons] = React.useState<string[]>([]);
-  const [reportNotes, setReportNotes] = React.useState('');
-  const [isSubmittingReport, setIsSubmittingReport] = React.useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  const handleToggleReportReason = React.useCallback((reason: string) => {
-    setReportReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
-  }, []);
-
-  const resetReportState = React.useCallback(() => {
-    setReportReasons([]);
-    setReportNotes('');
-    setIsSubmittingReport(false);
-  }, []);
-
-  const handleReportDialogChange = React.useCallback(
-    (open: boolean) => {
-      setIsReportOpen(open);
-      if (!open) {
-        resetReportState();
-      }
-    },
-    [resetReportState]
-  );
-
-  const fetchProfile = React.useCallback(
-    async (id: string, options: { silent?: boolean } = {}) => {
-      if (!options.silent) {
-        setProfileLoading(true);
-      }
-      setProfileError(null);
-
-      try {
-        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single<Profile>();
-
-        if (error) {
-          console.error('[connect/session] Failed to load profile', error);
-          setProfileError('Unable to confirm your verification status. Please refresh.');
-        } else {
-          setProfile(data);
-        }
-      } catch (err) {
-        console.error('[connect/session] Unexpected profile fetch error', err);
-        setProfileError('Unable to confirm your verification status. Please refresh.');
-      } finally {
-        if (!options.silent) {
-          setProfileLoading(false);
-        }
-      }
-    },
-    [supabase]
-  );
-
-  React.useEffect(() => {
+  useEffect(() => {
     setMobilePanel(isChatMode ? 'chat' : 'voice');
   }, [isChatMode]);
 
-  React.useEffect(() => {
-    let isMounted = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
-    const initialiseProfile = async () => {
-      try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (error) {
-          console.error('[connect/session] Failed to resolve user', error);
-          setProfileError('Unable to confirm your verification status. Please refresh.');
-          setProfileLoading(false);
-          return;
-        }
-
-        if (!user) {
-          setProfileError('Your session has expired. Please sign in again.');
-          setProfileLoading(false);
-          router.replace('/connect');
-          return;
-        }
-
-        setUserId(user.id);
-        await fetchProfile(user.id);
-
-        channel = supabase
-          .channel(`profile-verification-${user.id}`)
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-            (payload) => {
-              setProfile(payload.new as Profile);
-            }
-          )
-          .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              console.debug('[connect/session] Subscribed to profile verification updates');
-            }
-          });
-      } catch (err) {
-        console.error('[connect/session] Unexpected profile initialisation error', err);
-        if (isMounted) {
-          setProfileError('Unable to confirm your verification status. Please refresh.');
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    initialiseProfile();
-
-    return () => {
-      isMounted = false;
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [fetchProfile, router, supabase]);
-
-  const fetchActiveBan = React.useCallback(
-    async (options: { silent?: boolean } = {}) => {
-      if (!options.silent) {
-        setBanLoading(true);
-      }
-      setBanError(null);
-      try {
-        const response = await fetch('/api/me/ban');
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || 'Failed to check ban status');
-        }
-        const payload = (await response.json()) as { ban: ActiveUserBan | null };
-        setActiveBan(payload.ban ?? null);
-      } catch (err) {
-        console.error('[connect/session] Failed to load ban status', err);
-        setBanError((err as Error).message);
-      } finally {
-        setBanLoading(false);
-      }
-    },
-    []
-  );
-
-  React.useEffect(() => {
-    if (!userId) return;
-    void fetchActiveBan();
-  }, [fetchActiveBan, userId]);
-
-  const handleBanRetry = React.useCallback(() => {
-    void fetchActiveBan();
-  }, [fetchActiveBan]);
-
-  const handleDisconnect = React.useCallback(() => {
+  const handleDisconnect = useCallback(() => {
     if (typeof end === 'function') {
       setIsDisconnecting(true);
       end();
@@ -249,56 +109,7 @@ export default function ConnectSessionPage() {
     }
   }, [end, router]);
 
-  const handleReport = React.useCallback(() => {
-    setIsReportOpen(true);
-  }, []);
-
-  const handleReportSubmit = React.useCallback(async () => {
-    if (!reportReasons.length || !roomId || !peerUserId) {
-      return;
-    }
-
-    setIsSubmittingReport(true);
-
-    try {
-      const response = await fetch('/api/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roomId,
-          reasons: reportReasons,
-          notes: reportNotes.trim(),
-          chatLog: chatMessages,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({}));
-        throw new Error(errorPayload.error || 'Failed to submit report');
-      }
-
-      const { reportedUserId } = (await response.json().catch(() => ({}))) as { reportedUserId?: string };
-      if (reportedUserId) {
-        markUserBlocked?.(reportedUserId);
-      } else {
-        markUserBlocked?.(peerUserId);
-      }
-
-      if (typeof end === 'function') {
-        end();
-      }
-
-      toast.success('Thanks for helping keep the community safe.');
-      handleReportDialogChange(false);
-    } catch (error) {
-      console.error('[connect/session] Failed to submit report', error);
-      toast.error('We could not submit your report. Please try again.');
-    } finally {
-      setIsSubmittingReport(false);
-    }
-  }, [chatMessages, end, handleReportDialogChange, markUserBlocked, peerUserId, reportNotes, reportReasons, roomId]);
-
-  const handleRequestLocalAudio = React.useCallback(async () => {
+  const handleRequestLocalAudio = useCallback(async () => {
     console.log('Requesting local audio from stable wrapper');
     try {
       return await requestLocalAudio();
@@ -308,26 +119,12 @@ export default function ConnectSessionPage() {
     }
   }, [requestLocalAudio]);
 
-  const handleProfileRetry = React.useCallback(async () => {
-    if (userId) {
-      await fetchProfile(userId);
-      return;
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      await fetchProfile(user.id);
-    }
-  }, [fetchProfile, supabase, userId]);
-
   if (profileLoading) {
     return <VerificationLoadingState />;
   }
 
   if (profileError) {
-    return <VerificationErrorState message={profileError} onRetry={handleProfileRetry} />;
+    return <VerificationErrorState message={profileError} onRetry={refetchProfile} />;
   }
 
   if (profileNeedsVerification(profile)) {
@@ -339,11 +136,11 @@ export default function ConnectSessionPage() {
   }
 
   if (banError) {
-    return <BanErrorState message={banError} onRetry={handleBanRetry} />;
+    return <BanErrorState message={banError} onRetry={refetchBan} />;
   }
 
   if (activeBan) {
-    return <BannedState ban={activeBan} onRetry={handleBanRetry} />;
+    return <BannedState ban={activeBan} onRetry={refetchBan} />;
   }
 
   if (isDisconnecting) {
@@ -373,14 +170,12 @@ export default function ConnectSessionPage() {
   }
 
   const hasVoiceSection = !isChatMode;
-  const canSubmitReport = reportReasons.length > 0 && !!roomId && !!peerUserId;
-  const isReportSubmitDisabled = isSubmittingReport || !canSubmitReport;
 
   return (
     <>
       <div className="flex screen-height flex-col gap-6 md:flex-row md:gap-8">
         <div className="flex flex-1 flex-col gap-4">
-          <div className="flex h-full flex-1 flex-col gap-6 md:flex-row">
+          <div className="flex h-full flex-1 flex-col gap-4 md:flex-row">
             {!isChatMode && (
               <div className={cn('h-full p-1 md:w-1/4', mobilePanel === 'voice' ? 'flex md:flex' : 'hidden md:flex')}>
                 <VoiceSection
@@ -399,7 +194,7 @@ export default function ConnectSessionPage() {
 
             <div
               className={cn(
-                'flex min-h-0 h-full flex-1 flex-col rounded-xl bg-accent/40',
+                'flex min-h-0 h-full flex-1 flex-col rounded-xl border-muted-foreground/20 border-2',
                 isChatMode ? 'w-full' : 'md:w-3/4',
                 !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
               )}>
@@ -427,57 +222,16 @@ export default function ConnectSessionPage() {
         <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
       </div>
 
-      <Dialog open={isReportOpen} onOpenChange={handleReportDialogChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Report this conversation</DialogTitle>
-            <DialogDescription>
-              Select everything that applies. We will end this session and match you with someone new.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {REPORT_REASONS.map((reason) => {
-              const checked = reportReasons.includes(reason);
-              return (
-                <label key={reason} className="flex items-center gap-3 rounded-lg p-1">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => handleToggleReportReason(reason)}
-                    aria-label={reason}
-                  />
-                  <span className="text-sm leading-tight">{reason}</span>
-                </label>
-              );
-            })}
-          </div>
-          <div className="space-y-2 pt-4">
-            <div className="flex items-center justify-between text-sm font-medium">
-              <span>Additional details</span>
-              <span className="text-xs text-muted-foreground">Optional</span>
-            </div>
-            <Textarea
-              value={reportNotes}
-              onChange={(event) => setReportNotes(event.target.value)}
-              placeholder="Share anything else that might help our safety team review this conversation."
-              maxLength={500}
-              aria-label="Additional report details"
-            />
-            <p className="text-xs text-muted-foreground text-right">{reportNotes.length}/500</p>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleReportDialogChange(false)}
-              disabled={isSubmittingReport}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleReportSubmit} disabled={isReportSubmitDisabled}>
-              {isSubmittingReport ? 'Submitting…' : 'Submit report'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReportDialog
+        open={isReportOpen}
+        onOpenChange={handleReportDialogChange}
+        reasons={reportReasons}
+        toggleReason={handleToggleReportReason}
+        notes={reportNotes}
+        setNotes={setReportNotes}
+        onSubmit={handleReportSubmit}
+        isSubmitting={isSubmittingReport}
+      />
     </>
   );
 }
@@ -608,7 +362,7 @@ function DisconnectingState() {
 }
 
 function MatchingState({ status, onCancel }: { status: string; onCancel: () => void }) {
-  const statusDescription = React.useMemo(() => {
+  const statusDescription = useMemo(() => {
     switch (status) {
       case 'waiting':
         return 'Waiting for someone to join the conversation';
@@ -639,7 +393,7 @@ function MatchingState({ status, onCancel }: { status: string; onCancel: () => v
 }
 
 function SessionEndedState({ status, onExit }: { status: string; onExit: () => void }) {
-  const info = React.useMemo(() => {
+  const info = useMemo(() => {
     switch (status) {
       case 'media-error': return { title: 'Connection Failed', desc: 'We could not establish a media connection. This is likely a firewall or network issue.' };
       case 'permission-denied': return { title: 'Microphone Denied', desc: 'Please allow microphone access to use this feature.' };
@@ -732,216 +486,22 @@ function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
     <div className="hidden md:flex md:w-[80px] flex-col items-center gap-8 pt-6">
       <div className="flex flex-col items-center gap-4 justify-evenly h-full w-full">
         <Button
-          variant="ghost"
+          variant="outline"
           aria-label="End Session"
           className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
           onClick={onDisconnect}>
           <XSquare className="size-6 text-destructive" />
-          <span className="text-base opacity-80 text-center leading-tight">End Session</span>
+          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">End Session</span>
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           aria-label="Report an Issue"
           className="flex flex-col h-fit w-[120px] p-4 bg-primary/10"
           onClick={onReport}>
           <AlertTriangle className="size-6" />
-          <span className="text-base opacity-80 text-center leading-tight">Report an Issue</span>
+          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">Report an Issue</span>
         </Button>
       </div>
     </div>
-  );
-}
-
-function VoiceSection({
-  status,
-  muted,
-  setMuted,
-  setAudioElementRef,
-  micReady,
-  micPermissionChecked,
-  requestLocalAudio,
-  localStream,
-  remoteStream,
-}: {
-  status: string;
-  muted: boolean;
-  setMuted: (muted: boolean) => void;
-  setAudioElementRef: (el: HTMLAudioElement | null) => void;
-  micReady: boolean;
-  micPermissionChecked: boolean;
-  requestLocalAudio: () => Promise<boolean>;
-  localStream: MediaStream | null;
-  remoteStream: MediaStream | null;
-}) {
-  const getStatusInfo = () => {
-    switch (status) {
-      case 'waiting':
-        return { text: 'Waiting...', icon: <Loader2 className="size-4 animate-spin" /> };
-      case 'connecting':
-        return { text: 'Connecting...', icon: <Loader2 className="size-4 animate-spin" /> };
-      case 'connected':
-        return { text: 'Connected', icon: null };
-      case 'permission-denied':
-        return { text: 'Mic denied', icon: null };
-      case 'no-mic':
-        return { text: 'No mic', icon: null };
-      case 'ended':
-        return { text: 'Call ended', icon: null };
-      default:
-        return { text: 'Init...', icon: <Loader2 className="size-4 animate-spin" /> };
-    }
-  };
-
-  const statusInfo = getStatusInfo();
-
-  const getMicStatusInfo = () => {
-    if (!micPermissionChecked) {
-      return { text: 'Checking mic...', icon: <Loader2 className="size-4 animate-spin" /> };
-    }
-    switch (status) {
-      case 'permission-denied':
-        return { text: 'Mic access denied', icon: null };
-      case 'no-mic':
-        return { text: 'No mic detected', icon: null };
-      default:
-        return { text: 'Mic required', icon: null };
-    }
-  };
-
-  const micStatusInfo = getMicStatusInfo();
-
-  return (
-    <div className="flex flex-col gap-4 h-full w-full">
-      {/* Peer Voice Panel */}
-      <div className="relative rounded-2xl border-2 border-secondary p-4 h-1/2">
-        <div className="absolute left-2 top-2 text-xs opacity-70">Peer</div>
-        <div className="flex flex-col items-center justify-center pt-6 h-full">
-          {status === 'connected' ? (
-            <AudioWaveform
-              audioStream={remoteStream}
-              isActive={status === 'connected'}
-              color="var(--secondary)"
-              className="mb-8 h-16"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-4">
-              {statusInfo.icon}
-              <div className="mt-2 text-sm">{statusInfo.text}</div>
-            </div>
-          )}
-        </div>
-        <audio ref={setAudioElementRef} autoPlay playsInline className="hidden" />
-      </div>
-
-      {/* Your Voice Panel */}
-      <div className="relative rounded-2xl border-2 border-primary p-4 h-1/2">
-        <div className="absolute right-2 top-2 text-xs opacity-70">You</div>
-        <div className="flex flex-col items-center justify-center pt-6 h-full">
-          {micReady ? (
-            <>
-              <AudioWaveform
-                audioStream={localStream}
-                isActive={micReady}
-                muted={muted}
-                color="var(--primary)"
-                className="mb-4 h-16"
-              />
-              <div className="text-xs opacity-70 mb-4">{muted ? 'Muted' : 'Speaking'}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => setMuted(!muted)}
-                aria-label={muted ? 'Unmute' : 'Mute'}>
-                <MicOff className="size-3" />
-                <span className="text-xs">{muted ? 'Unmute' : 'Mute'}</span>
-              </Button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-4">
-              {micPermissionChecked && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mb-2 gap-1"
-                  onClick={() => requestLocalAudio().catch((err) => console.error('Error enabling microphone:', err))}>
-                  <Mic className="size-3" />
-                  <span className="text-xs">Enable Mic</span>
-                </Button>
-              )}
-              <div className="flex flex-col items-center gap-2">
-                {micStatusInfo.icon}
-                <div className="text-xs opacity-70">{micStatusInfo.text}</div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Extracted Component to manage local loading state cleanly
-function SuggestedMatchDialog({
-  suggestedMatch,
-  onAccept,
-  onReject
-}: {
-  suggestedMatch: { topic: string; peerConsentedToMe: boolean } | null,
-  onAccept?: () => Promise<void>,
-  onReject?: () => void
-}) {
-  const [isAccepting, setIsAccepting] = React.useState(false);
-
-  // Reset state when dialog closes or match changes
-  useEffect(() => {
-    if (!suggestedMatch) setIsAccepting(false);
-  }, [suggestedMatch]);
-
-  return (
-    <Dialog
-      open={!!suggestedMatch}
-      onOpenChange={(open) => {
-        if (!open) {
-          setIsAccepting(false);
-          onReject?.();
-        }
-      }}
-    >
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle>No perfect match found</DialogTitle>
-          <DialogDescription asChild className="space-y-2">
-            <div className="text-sm text-muted-foreground">
-              <div>Hey we couldn&apos;t find you a great match... the closest topic we could find was &quot;<b>{suggestedMatch?.topic}</b>&quot;.</div>
-              {suggestedMatch?.peerConsentedToMe && (
-                <div className="flex items-center gap-2 text-green-600 font-medium bg-green-50 p-2 rounded-md">
-                  <div className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                  </div>
-                  Your peer wants to connect!
-                </div>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onReject?.()} disabled={isAccepting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              setIsAccepting(true);
-              await onAccept?.();
-            }}
-            disabled={isAccepting}
-          >
-            {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {suggestedMatch?.peerConsentedToMe ? "Accept & Connect" : (isAccepting ? "Waiting for peer..." : "Connect")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

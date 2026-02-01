@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ThemeToggle } from './theme-toggle';
+import { ThemeToggle } from './ThemeToggle';
+import { AccessibilityMenu } from './AccessibilityMenu';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -105,7 +106,12 @@ const Navbar = () => {
 
   // On home page when not authenticated, show only ThemeToggle
   if (!isAuthed && pathname === '/') {
-    return <ThemeToggle className="absolute top-4 right-4" />;
+    return (
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <AccessibilityMenu />
+        <ThemeToggle />
+      </div>
+    );
   }
 
   return (
@@ -135,12 +141,14 @@ const Navbar = () => {
             </Link>
           </div>
           <div className="ml-auto flex items-center gap-6 pr-6">
+            <AccessibilityMenu />
             <ThemeToggle />
             {isAuthed ? <UserAvatar initials={initials} onSignOut={handleSignOut} isAdmin={isAdmin} /> : null}
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
         <div className="md:hidden flex items-center gap-4 ml-auto">
+          <AccessibilityMenu />
           <ThemeToggle />
           <Button
             type="button"

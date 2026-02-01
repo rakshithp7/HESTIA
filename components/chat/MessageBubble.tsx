@@ -12,7 +12,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     <div className={isFromMe ? 'flex justify-end' : ''}>
       <div
         className={`w-fit max-w-xs rounded-2xl border-2 p-3 ${
-          isFromMe ? 'border-foreground bg-foreground text-background' : 'border-primary/60 bg-card/40'
+          isFromMe ? 'border-foreground bg-foreground text-background' : 'border-primary/60 bg-card'
         }`}>
         {message.text}
       </div>

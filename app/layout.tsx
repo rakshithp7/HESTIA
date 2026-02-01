@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Unna } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { AccessibilityProvider } from '@/components/providers/accessibility-provider';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -15,6 +16,32 @@ const unna = Unna({
 const difont = localFont({
   src: [{ path: '/fonts/difont.ttf' }],
   variable: '--font-difont',
+});
+
+const openDyslexic = localFont({
+  src: [
+    {
+      path: './fonts/opendyslexic-0.92/OpenDyslexic-Regular.otf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: './fonts/opendyslexic-0.92/OpenDyslexic-Italic.otf',
+      weight: '400',
+      style: 'italic',
+    },
+    {
+      path: './fonts/opendyslexic-0.92/OpenDyslexic-Bold.otf',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: './fonts/opendyslexic-0.92/OpenDyslexic-BoldItalic.otf',
+      weight: '700',
+      style: 'italic',
+    },
+  ],
+  variable: '--font-dyslexic',
 });
 
 export const metadata: Metadata = {
@@ -35,13 +62,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${unna.variable} ${difont.variable} antialiased`}>
+      <body className={`${unna.variable} ${difont.variable} ${openDyslexic.variable} antialiased`}>
         <ThemeProvider>
-          <div className="relative">
-            <Navbar />
-            {children}
-          </div>
-          <Toaster />
+          <AccessibilityProvider>
+            <div className="relative">
+              <Navbar />
+              {children}
+            </div>
+            <Toaster />
+          </AccessibilityProvider>
         </ThemeProvider>
       </body>
     </html>
