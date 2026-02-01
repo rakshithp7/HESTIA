@@ -45,7 +45,7 @@ export function ReportDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Report this conversation</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className='text-base'>
             Select everything that applies. We will end this session and match you with someone new.
           </DialogDescription>
         </DialogHeader>
@@ -59,15 +59,15 @@ export function ReportDialog({
                   onCheckedChange={() => toggleReason(reason)}
                   aria-label={reason}
                 />
-                <span className="text-sm leading-tight">{reason}</span>
+                <span className="text-base leading-tight">{reason}</span>
               </label>
             );
           })}
         </div>
         <div className="space-y-2 pt-4">
-          <div className="flex items-center justify-between text-sm font-medium">
+          <div className="flex items-center justify-between text-base font-medium">
             <span>Additional details</span>
-            <span className="text-xs text-muted-foreground">Optional</span>
+            <span className="text-sm text-muted-foreground">Optional</span>
           </div>
           <Textarea
             value={notes}
@@ -76,7 +76,7 @@ export function ReportDialog({
             maxLength={500}
             aria-label="Additional report details"
           />
-          <p className="text-xs text-muted-foreground text-right">{notes.length}/500</p>
+          <p className="text-sm text-muted-foreground text-right">{notes.length}/500</p>
         </div>
         <DialogFooter>
           <Button

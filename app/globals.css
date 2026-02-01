@@ -151,7 +151,7 @@
   
   /* Secondary: Darker shade of Lilac (#a284a1) -> #5e465d */
   --secondary: #5e465d;
-  --secondary-foreground: #ffffff;
+  --secondary-foreground: #000000;
   
   --muted-foreground: #000000;
   
@@ -176,7 +176,7 @@
   
   /* Secondary: Lighter shade of Kashmir Blue (#537692) -> #b3d1eb */
   --secondary: #b3d1eb;
-  --secondary-foreground: #000000;
+  --secondary-foreground: #ffffff;
   
   --muted-foreground: #ffffff;
   
@@ -212,14 +212,54 @@
   }
 
   body.font-dyslexic nav * {
-    font-size-adjust: 0.3;
+    font-size-adjust: 0.28;
   }
 }
 
 @layer utilities {
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
   .text-sm {
-    font-size: 1.2rem;
-    line-height: 1.5;
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .text-base {
+    font-size: 1.25rem;
+    line-height: 2rem;
+  }
+
+  .text-md {
+    font-size: 1.5rem;
+    line-height: 2.25rem;
+  }
+
+  .text-lg {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+  }
+
+  .text-xl {
+    font-size: 2rem;
+    line-height: 2.5rem;
+  }
+
+  .text-2xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  .text-3xl {
+    font-size: 2.5rem;
+    line-height: 3rem;
+  }
+
+  .text-4xl {
+    font-size: 2.75rem;
+    line-height: 3rem;
   }
 
   .screen-height {

@@ -229,7 +229,7 @@ export function AdminReportsPanel({ variant = 'page' }: AdminReportsPanelProps) 
       ) : (
         <div className="space-y-4">
           {reports.map((report) => (
-            <article key={report.id} className="rounded-xl border border-border p-4 shadow-sm">
+            <article key={report.id} className="bg-card/40 rounded-xl border border-border p-4 shadow-sm ">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-sm text-secondary-foreground">{formatDateTime(report.created_at)}</p>

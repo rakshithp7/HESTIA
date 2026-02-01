@@ -99,7 +99,7 @@ export function VoiceSection({
                 color="var(--primary)"
                 className="mb-4 h-16"
               />
-              <div className="text-xs opacity-70 mb-4">{muted ? 'Muted' : 'Speaking'}</div>
+              <div className="text-sm opacity-70 mb-4">{muted ? 'Muted' : 'Speaking'}</div>
               <Button
                 variant="outline"
                 size="sm"
@@ -107,7 +107,7 @@ export function VoiceSection({
                 onClick={() => setMuted(!muted)}
                 aria-label={muted ? 'Unmute' : 'Mute'}>
                 <MicOff className="size-3" />
-                <span className="text-xs">{muted ? 'Unmute' : 'Mute'}</span>
+                <span className="text-sm">{muted ? 'Unmute' : 'Mute'}</span>
               </Button>
             </>
           ) : (
@@ -119,12 +119,12 @@ export function VoiceSection({
                   className="mb-2 gap-1"
                   onClick={() => requestLocalAudio().catch((err) => console.error('Error enabling microphone:', err))}>
                   <Mic className="size-3" />
-                  <span className="text-xs">Enable Mic</span>
+                  <span className="text-sm">Enable Mic</span>
                 </Button>
               )}
               <div className="flex flex-col items-center gap-2">
                 {micStatusInfo.icon}
-                <div className="text-xs opacity-70">{micStatusInfo.text}</div>
+                <div className="text-sm opacity-70">{micStatusInfo.text}</div>
               </div>
             </div>
           )}

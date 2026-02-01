@@ -35,22 +35,22 @@ function ResourceLine({ text, highlightQuery }: { text: string; highlightQuery: 
         href={text}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-primary hover:underline flex items-center gap-1 w-fit">
+        className="text-base text-primary hover:underline flex items-center gap-1 w-fit">
         {highlightText(text, highlightQuery)}
         <ExternalLink className="h-3 w-3" />
       </a>
     );
   }
-  return <div className="text-sm leading-relaxed">{highlightText(text, highlightQuery)}</div>;
+  return <div className="text-base leading-relaxed">{highlightText(text, highlightQuery)}</div>;
 }
 
 function SectionDetails({ section, highlightQuery }: { section: ResourceSection; highlightQuery: string }) {
   return (
     <div>
-      <h2 className="text-3xl md:text-4xl font-medium mb-6">{highlightText(section.title, highlightQuery)}</h2>
+      <h2 className="text-xl md:text-2xl font-medium mb-6">{highlightText(section.title, highlightQuery)}</h2>
       <div className="space-y-8">
         {section.entries.length === 0 ? (
-          <p className="text-sm">Coming soon.</p>
+          <p className="text-base">Coming soon.</p>
         ) : (
           section.entries.map((entry) => (
             <div key={entry.name}>
@@ -142,7 +142,7 @@ export default function ResourcesPage() {
                     onClick={() => setSelectedId(s.id)}
                     aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
                     disabled={queryActive}
-                    className={`text-left justify-start px-0 h-auto whitespace-normal hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
+                    className={`text-left text-md justify-start px-0 h-auto whitespace-normal hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
                       }`}>
                     {s.title}
                   </Button>
@@ -189,10 +189,10 @@ export default function ResourcesPage() {
               {filteredSections.map((section) => (
                 <AccordionItem key={section.id} value={section.id}>
                   <AccordionTrigger className="text-left">
-                    <span className="text-xl font-medium">{highlightText(section.title, highlightQuery)}</span>
+                    <span className="text-lg font-medium">{highlightText(section.title, highlightQuery)}</span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-8 pt-2">
+                    <div className="space-y-10 pt-2">
                       {section.entries.length === 0 ? (
                         <p className="text-sm">Coming soon.</p>
                       ) : (

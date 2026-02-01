@@ -28,30 +28,30 @@ export default function ConnectPage() {
   return (
     <div className="px-6 py-0 md:py-8 md:px-12">
       <div className="mx-auto max-w-xl mt-24 text-center space-y-8">
-        <h2 className="text-2xl md:text-4xl mb-4">What’s on your mind?</h2>
+        <h2 className="text-3xl mb-8">What's on your mind?</h2>
 
         <Input
           type="text"
           placeholder="Type here..."
-          className="w-3/4 px-4 py-2 text-base"
+          className="w-3/4 px-4 py-6 text-base"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
         />
 
         <TooltipProvider>
-          <div className="mt-4 flex items-center justify-center gap-6">
+          <div className="mt-4 flex items-center justify-center gap-4 md:gap-8">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
                   aria-label="Call"
-                  className={`size-36 ${mode === 'voice' ? 'border-primary bg-primary/20' : ''}`}
+                  className={`size-40 md:size-48 ${mode === 'voice' ? 'border-primary bg-primary/20' : ''}`}
                   onClick={() => setMode('voice')}>
-                  <Phone className="size-18" />
+                  <Phone className="size-20 md:size-24" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Start a voice & chat session</TooltipContent>
+              <TooltipContent className='text-base'>Start a voice & chat session</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -59,19 +59,19 @@ export default function ConnectPage() {
                   variant="outline"
                   size="icon"
                   aria-label="Chat"
-                  className={`size-36 ${mode === 'chat' ? 'border-primary bg-primary/20' : ''}`}
+                  className={`size-40 md:size-48 ${mode === 'chat' ? 'border-primary bg-primary/20' : ''}`}
                   onClick={() => setMode('chat')}>
-                  <MessageSquare className="size-18" />
+                  <MessageSquare className="size-20 md:size-24" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Start a chat only session</TooltipContent>
+              <TooltipContent className='text-base'>Start a chat only session</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
 
         <Button
-          variant="outline"
-          size="xl"
+          variant="outline_fill"
+          size="2xl"
           className="mt-6"
           onClick={onConnect}
           disabled={!(mode && topic.trim().length > 0)}>

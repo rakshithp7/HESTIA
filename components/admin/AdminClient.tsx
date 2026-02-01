@@ -64,10 +64,10 @@ export function AdminClient({ displayName, initialSection }: AdminClientProps) {
                         type="button"
                         onClick={() => setActiveSection(item.id)}
                         className={cn(
-                          'w-full justify-start rounded-lg px-3 py-2 text-sm font-semibold transition-all text-left',
+                          'w-full justify-start rounded-lg px-3 py-2 text-base font-semibold transition-all text-left h-12',
                           isActive
                             ? 'bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-border/60'
-                            : 'text-foreground/70 hover:bg-background hover:text-foreground'
+                            : 'text-foreground/70 hover:bg-muted/50 hover:text-foreground'
                         )}>
                         {item.label}
                       </Button>

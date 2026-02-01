@@ -28,7 +28,7 @@ const Navbar = () => {
 
   const linkClass = (href: string) => {
     const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href) || pathname === href;
-    return cn('text-3xl tracking-widest font-difont hover:underline underline-offset-4 mt-2', isActive && 'underline');
+    return cn('text-2xl tracking-widest font-difont hover:underline underline-offset-4 mt-2', isActive && 'underline');
   };
 
   useEffect(() => {
@@ -126,7 +126,6 @@ const Navbar = () => {
         {/* Desktop menu */}
         <div className="hidden md:flex flex-1 items-center">
           <div className="flex flex-1 justify-center items-center gap-10">
-            {/* <Link href="/" className={linkClass('/')}>HOME</Link> */}
             <Link href="/about" className={linkClass('/about')}>
               ABOUT
             </Link>
@@ -214,7 +213,7 @@ const Navbar = () => {
                 <>
                   <Link
                     href="/profile"
-                    className="text-lg tracking-widest hover:underline w-full text-center"
+                    className="text-base tracking-widest hover:underline w-full text-center"
                     onClick={() => {
                       setOpen(false);
                       setMenuOpen(false);
@@ -224,7 +223,7 @@ const Navbar = () => {
                   {isAdmin ? (
                     <Link
                       href="/admin"
-                      className="text-lg tracking-widest hover:underline w-full text-center"
+                      className="text-base tracking-widest hover:underline w-full text-center"
                       onClick={() => {
                         setOpen(false);
                         setMenuOpen(false);
@@ -240,7 +239,7 @@ const Navbar = () => {
                       setMenuOpen(false);
                       handleSignOut();
                     }}
-                    className="text-lg tracking-widest hover:underline w-full text-center">
+                    className="text-base tracking-widest hover:underline w-full text-center">
                     Sign out
                   </Button>
                 </>

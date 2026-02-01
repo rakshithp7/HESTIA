@@ -33,7 +33,7 @@ export function AccessibilityMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[300px] p-4">
-        <DropdownMenuLabel className="mb-2 text-lg text-center font-serif">
+        <DropdownMenuLabel className="mb-2 text-md text-center font-serif">
           Accessibility Settings
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="mb-4" />
@@ -41,7 +41,7 @@ export function AccessibilityMenu() {
         <div className="space-y-6">
           {/* High Contrast */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">High Contrast</span>
+            <span className="text-base font-medium">High Contrast</span>
             <Switch
               checked={highContrast}
               onCheckedChange={setHighContrast}
@@ -50,7 +50,7 @@ export function AccessibilityMenu() {
 
           {/* Dyslexic Font */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Dyslexic Font</span>
+            <span className="text-base font-medium">Dyslexic Font</span>
             <Switch
               checked={dyslexicFont}
               onCheckedChange={setDyslexicFont}
@@ -60,8 +60,8 @@ export function AccessibilityMenu() {
           {/* Text Scale */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Text Scale</span>
-              <span className="text-xs text-muted-foreground">{Math.round(textScale * 100)}%</span>
+              <span className="text-base font-medium">Text Scale</span>
+              <span className="text-sm text-muted-foreground">{Math.round(textScale * 100)}%</span>
             </div>
             <div className="flex items-center gap-2 justify-between bg-muted/50 p-1 rounded-md">
               <Button
@@ -70,7 +70,7 @@ export function AccessibilityMenu() {
                 onClick={() => setTextScale(Math.max(0.8, textScale - 0.1))}
                 disabled={textScale <= 0.8}
               >
-                <span className="text-xs">A-</span>
+                <span className="text-sm">A-</span>
               </Button>
               <div className="h-4 w-[1px] bg-border" />
               <Button

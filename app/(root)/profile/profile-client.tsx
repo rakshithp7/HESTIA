@@ -125,7 +125,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
   const renderBlockedUsers = () => {
     if (blockedLoading) {
       return (
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 text-base text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
           <span>Loading blocked users…</span>
         </div>
@@ -134,7 +134,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
 
     if (blockedError) {
       return (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center justify-between">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-base text-destructive flex items-center justify-between">
           <span>{blockedError}</span>
           <Button size="sm" variant="ghost" onClick={() => fetchBlockedUsers()}>
             Retry
@@ -144,7 +144,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
     }
 
     if (!blockedUsers.length) {
-      return <p className="text-sm text-muted-foreground">You haven’t blocked anyone yet.</p>;
+      return <p className="text-base text-muted-foreground">You haven’t blocked anyone yet.</p>;
     }
 
     return (
@@ -161,7 +161,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
               key={blockedUser.id}
               className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2">
               <div>
-                <p className="text-sm font-medium text-foreground">{label}</p>
+                <p className="text-base font-medium text-foreground">{label}</p>
                 <p className="text-xs text-muted-foreground">
                   User ID: <span className="font-mono">{blockedUser.id}</span>
                 </p>
@@ -184,9 +184,9 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
     <div className="px-6 py-8 md:px-12">
       <div className="mx-auto max-w-5xl space-y-8 text-foreground">
         <header className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.15em] text-foreground">Account</p>
+          <p className="text-lg uppercase tracking-[0.15em] text-foreground">Account</p>
           <h1 className="text-3xl md:text-4xl font-semibold">Welcome back, {displayName}</h1>
-          <p className="text-foreground">Manage your password and review your verification status.</p>
+          <p className="text-base text-foreground">Manage your password and review your verification status.</p>
         </header>
 
         <div className="md:hidden">
@@ -204,7 +204,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
           </Select>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-4">
           <aside className="hidden md:block md:w-64">
             <nav className="rounded-2xl border border-border/70 bg-card/20 p-4 shadow-sm text-foreground">
               <ul className="space-y-2">
@@ -217,10 +217,10 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                         type="button"
                         onClick={() => setActiveSection(item.id)}
                         className={cn(
-                          'w-full justify-start rounded-lg px-3 py-2 text-sm font-semibold transition-all text-left',
+                          'w-full justify-start rounded-lg px-3 py-2 text-base font-semibold transition-all text-left h-12',
                           isActive
                             ? 'bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-border/60'
-                            : 'text-foreground/70 hover:bg-background hover:text-foreground'
+                            : 'text-foreground/70 hover:bg-muted/50 hover:text-foreground'
                         )}>
                         {item.label}
                       </Button>
@@ -236,12 +236,12 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
               <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm backdrop-blur text-foreground">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Security</h2>
-                  <p className="text-sm text-foreground">Update your password to keep your account protected.</p>
+                  <p className="text-base text-foreground">Update your password to keep your account protected.</p>
                 </div>
 
                 <form onSubmit={handlePasswordChange} className="space-y-4 max-w-xl">
                   <div className="space-y-2">
-                    <Label htmlFor="new-password" className="text-sm font-medium text-foreground">
+                    <Label htmlFor="new-password" className="text-base font-medium text-foreground">
                       New password
                     </Label>
                     <Input
@@ -256,8 +256,8 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                       required
                     />
                   </div>
-                  {error ? <p className="text-sm text-destructive">{error}</p> : null}
-                  {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
+                  {error ? <p className="text-base text-destructive">{error}</p> : null}
+                  {success ? <p className="text-base text-emerald-600 dark:text-emerald-400">{success}</p> : null}
                   <Button type="submit" disabled={loading}>
                     {loading ? 'Updating…' : 'Update password'}
                   </Button>
@@ -269,7 +269,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
               <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm text-foreground">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Verification status</h2>
-                  <p className="text-sm text-foreground">
+                  <p className="text-base text-foreground">
                     View your current status or resume the Stripe Identity flow.
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
               <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm text-foreground">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Blocked users</h2>
-                  <p className="text-sm text-foreground">
+                  <p className="text-base text-foreground">
                     Manage the people you’ve blocked. Removing someone allows the matching system to pair you again.
                   </p>
                 </div>

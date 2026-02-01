@@ -2,7 +2,6 @@ export type FAQItemId = 'how' | 'who' | 'why';
 
 export type FAQItem = {
   id: FAQItemId;
-  question: string;
   heading: string;
   paragraphs?: string[];
   bullets?: string[];
@@ -12,7 +11,6 @@ export type FAQItem = {
 export const FAQ_ITEMS: FAQItem[] = [
   {
     id: 'how',
-    question: 'How does Hestia Work?',
     heading: 'How Does Hestia Work?',
     subSections: [
       {
@@ -39,7 +37,6 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     id: 'who',
-    question: 'Who is Hestia for?',
     heading: 'Who is Hestia for?',
     paragraphs: [
       'Hestia is for anyone seeking a safe, anonymous space to connect with others through shared age groups and topics of interest. Whether you want to talk, listen, or simply feel less alone, you’re welcome here.',
@@ -48,7 +45,6 @@ export const FAQ_ITEMS: FAQItem[] = [
   },
   {
     id: 'why',
-    question: 'Why Hestia?',
     heading: 'Why Hestia?',
     paragraphs: [
       'Because compassionate, judgment-free conversations matter. Hestia prioritizes privacy, simplicity, and meaningful human connection without pressure, costs, or complexity.',

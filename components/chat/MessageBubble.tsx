@@ -15,7 +15,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <UserIcon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div
-        className={`w-fit max-w-xs rounded-2xl border-2 p-3 ${
+        className={`w-fit max-w-xs rounded-2xl border-2 p-3 text-base ${
           isFromMe ? 'border-foreground bg-foreground text-background' : 'border-primary/60 bg-card'
         }`}>
         {message.text}

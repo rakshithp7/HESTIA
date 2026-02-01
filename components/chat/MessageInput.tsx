@@ -84,7 +84,7 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disab
             value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={disabled ? 'Connecting...' : 'Your message here...'}
-            className="flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
             disabled={disabled}
           />
           <Button

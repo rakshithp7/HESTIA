@@ -382,7 +382,7 @@ function MatchingState({ status, onCancel }: { status: string; onCancel: () => v
           <div className="relative flex h-full w-full items-center justify-center rounded-full bg-primary/10" />
         </div>
         <div className="text-2xl font-semibold tracking-wide">Looking for a friend...</div>
-        <p className="text-sm text-muted-foreground">{statusDescription}</p>
+        <p className="text-base text-muted-foreground">{statusDescription}</p>
         <Button type="button" variant="outline" size="sm" className="mt-4 gap-2" onClick={onCancel}>
           <XSquare className="size-4" />
           <span>Cancel</span>
