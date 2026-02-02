@@ -45,8 +45,8 @@ export function SuggestedMatchDialog({
         <DialogHeader>
           <DialogTitle>No perfect match found</DialogTitle>
           <DialogDescription asChild className="space-y-2">
-            <div className="text-sm text-muted-foreground">
-              <div>
+            <div className="text-base text-muted-foreground">
+              <div className="text-base">
                 Hey we couldn&apos;t find you a great match... the closest topic
                 we could find was &quot;<b>{suggestedMatch?.topic}</b>&quot;.
               </div>

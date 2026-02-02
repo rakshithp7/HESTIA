@@ -183,8 +183,8 @@
 
   --muted-foreground: #000000;
 
-  --accent: #0f3034; /* Use Primary Dark for accent */
-  --accent-foreground: #ffffff;
+  --accent: #ffffff; /* Use Primary Dark for accent */
+  --accent-foreground: #000000;
 
   --border: #000000;
   --input: #ffffff;
@@ -208,8 +208,8 @@
 
   --muted-foreground: #ffffff;
 
-  --accent: #ead4ea; /* Use Primary Light for accent */
-  --accent-foreground: #000000;
+  --accent: #000000; /* Use Primary Light for accent */
+  --accent-foreground: #ffffff;
 
   --border: #ffffff;
   --input: #000000;
@@ -240,10 +240,6 @@
   body.font-dyslexic .font-difont.preserve-font {
     font-family: var(--font-difont) !important;
     font-size-adjust: none;
-  }
-
-  body.font-dyslexic nav * {
-    font-size-adjust: 0.28;
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface AudioWaveformProps {
@@ -24,14 +24,21 @@ export default function AudioWaveform({
   soundThreshold = 15, // Default threshold value
   compact = false,
 }: AudioWaveformProps) {
-  // Reduce bar count in compact mode for simpler visualization
-  const barCount = compact
-    ? Math.floor(initialBarCount * 0.6)
-    : initialBarCount;
-  const [levels, setLevels] = useState<number[]>(Array(barCount).fill(5));
+  // Memoize bar count calculation
+  const barCount = useMemo(
+    () => (compact ? Math.floor(initialBarCount * 0.6) : initialBarCount),
+    [compact, initialBarCount]
+  );
+
+  const [levels, setLevels] = useState<number[]>(() => Array(barCount).fill(5));
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  // Use refs to store reusable arrays (avoid allocations in hot path)
+  const levelsBufferRef = useRef<number[]>(new Array(barCount).fill(5));
+  const lastUpdateTimeRef = useRef<number>(0);
 
   // Track audio tracks count to detect changes
   const [audioTrackCount, setAudioTrackCount] = useState(0);
@@ -56,6 +63,12 @@ export default function AudioWaveform({
       }
     };
   }, [audioStream]);
+
+  // Update buffer size when barCount changes
+  useEffect(() => {
+    levelsBufferRef.current = new Array(barCount).fill(5);
+    setLevels(Array(barCount).fill(5));
+  }, [barCount]);
 
   // Cleanup AudioContext on unmount
   useEffect(() => {
@@ -114,59 +127,88 @@ export default function AudioWaveform({
       });
     }
 
+    // Disconnect any existing source before creating a new one
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.disconnect();
+      } catch (err) {
+        console.error('Error disconnecting previous source:', err);
+      }
+      sourceRef.current = null;
+    }
+
     // Connect stream to analyzer
-    let source: MediaStreamAudioSourceNode | null = null;
     try {
-      source = context.createMediaStreamSource(audioStream);
+      const source = context.createMediaStreamSource(audioStream);
       source.connect(analyzer);
+      sourceRef.current = source;
     } catch (err) {
       console.error('Error creating MediaStreamSource:', err);
       return;
     }
 
-    // Start visualization loop
+    // Reuse data array and levels buffer
     const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+    const step = Math.floor(dataArray.length / barCount);
+    const UPDATE_THROTTLE = 50; // Update UI every 50ms (~20fps) instead of 60fps
 
     const updateLevels = () => {
       if (!analyzer || !isActive) return;
 
-      // If muted, show flat line regardless of audio input
+      const now = performance.now();
+
+      // If muted, show flat line (only update UI, not on every frame)
       if (muted) {
-        setLevels(Array(barCount).fill(5));
+        if (now - lastUpdateTimeRef.current >= UPDATE_THROTTLE) {
+          // Only update if levels aren't already flat
+          if (levelsBufferRef.current[0] !== 5) {
+            for (let i = 0; i < barCount; i++) {
+              levelsBufferRef.current[i] = 5;
+            }
+            setLevels([...levelsBufferRef.current]);
+            lastUpdateTimeRef.current = now;
+          }
+        }
         animationRef.current = requestAnimationFrame(updateLevels);
         return;
       }
 
       analyzer.getByteFrequencyData(dataArray);
 
-      // Check if there's any sound using the configurable threshold
-      const avgSoundLevel =
-        Array.from(dataArray).reduce((sum, value) => sum + value, 0) /
-        dataArray.length;
+      // Optimized: Calculate average without creating intermediate array
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      const avgSoundLevel = sum / dataArray.length;
       const hasSoundActivity = avgSoundLevel > soundThreshold;
 
-      // Process frequency data into bar heights
-      const newLevels = Array(barCount).fill(0);
-
+      // Reuse levels buffer instead of creating new array
       if (hasSoundActivity) {
-        const step = Math.floor(dataArray.length / barCount);
-
         for (let i = 0; i < barCount; i++) {
           const start = i * step;
-          let sum = 0;
+          let barSum = 0;
           for (let j = 0; j < step; j++) {
-            sum += dataArray[start + j] || 0;
+            barSum += dataArray[start + j] || 0;
           }
-          const avg = sum / step;
-          newLevels[i] = Math.max(5, Math.min(100, (avg / 255) * 100));
+          const avg = barSum / step;
+          levelsBufferRef.current[i] = Math.max(
+            5,
+            Math.min(100, (avg / 255) * 100)
+          );
         }
       } else {
         for (let i = 0; i < barCount; i++) {
-          newLevels[i] = 5;
+          levelsBufferRef.current[i] = 5;
         }
       }
 
-      setLevels(newLevels);
+      // Throttle state updates to reduce re-renders
+      if (now - lastUpdateTimeRef.current >= UPDATE_THROTTLE) {
+        setLevels([...levelsBufferRef.current]);
+        lastUpdateTimeRef.current = now;
+      }
+
       animationRef.current = requestAnimationFrame(updateLevels);
     };
 
@@ -176,8 +218,8 @@ export default function AudioWaveform({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      if (source) {
-        source.disconnect();
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
       }
     };
   }, [audioStream, isActive, barCount, muted, soundThreshold, audioTrackCount]);
@@ -187,27 +229,39 @@ export default function AudioWaveform({
     if (!isActive || audioStream) return;
 
     let frame = 0;
-    const idleAnimation = () => {
+    let lastUpdate = 0;
+    const UPDATE_INTERVAL = 50; // Update every 50ms for smoother idle animation
+
+    const idleAnimation = (timestamp: number) => {
       frame++;
+
+      // Throttle updates
+      if (timestamp - lastUpdate < UPDATE_INTERVAL) {
+        animationRef.current = requestAnimationFrame(idleAnimation);
+        return;
+      }
+      lastUpdate = timestamp;
 
       // For muted state or inactive state, show flat line
       if (muted || !isActive) {
-        setLevels(Array(barCount).fill(5)); // Flat line at minimum height
+        // Only update once if already flat
+        if (levelsBufferRef.current[0] !== 5) {
+          for (let i = 0; i < barCount; i++) {
+            levelsBufferRef.current[i] = 5;
+          }
+          setLevels([...levelsBufferRef.current]);
+        }
       } else {
         // For idle state (not muted but no stream), show gentle waves
-        const newLevels = Array(barCount)
-          .fill(0)
-          .map((_, i) => {
-            // Generate gentle sine wave pattern
-            const phase = (i / barCount) * Math.PI * 2;
-            const time = frame * 0.05;
-            const value =
-              Math.sin(phase + time) * 10 +
-              Math.sin(phase * 2.5 + time * 0.7) * 5;
-            return Math.max(5, Math.min(30, value + 15)); // Keep between 5-30%
-          });
-
-        setLevels(newLevels);
+        for (let i = 0; i < barCount; i++) {
+          const phase = (i / barCount) * Math.PI * 2;
+          const time = frame * 0.05;
+          const value =
+            Math.sin(phase + time) * 10 +
+            Math.sin(phase * 2.5 + time * 0.7) * 5;
+          levelsBufferRef.current[i] = Math.max(5, Math.min(30, value + 15));
+        }
+        setLevels([...levelsBufferRef.current]);
       }
 
       animationRef.current = requestAnimationFrame(idleAnimation);

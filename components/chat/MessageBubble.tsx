@@ -21,7 +21,7 @@ export function MessageBubble({
         <User2 className="h-4 w-4 text-muted-foreground" />
       </div>
       <div
-        className={`w-fit max-w-xs rounded-2xl border-2 p-3 ${compact ? 'text-sm' : 'text-base'} ${
+        className={`w-fit max-w-xs rounded-2xl border-2 p-2 ${compact ? 'text-sm' : 'text-base'} ${
           isFromMe
             ? 'border-foreground bg-foreground text-background'
             : 'border-primary/60 bg-card'
