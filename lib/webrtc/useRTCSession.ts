@@ -111,7 +111,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
 
   // -- Cleanup Functions --
   const resetSessionState = useCallback(() => {
-    console.log('[RTC] Resetting session state');
+    // console.log('[RTC] Resetting session state');
     setInternalStatus('idle');
     setChatMessages([]);
     setIsPeerTyping(false);
@@ -120,7 +120,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   }, []);
 
   const cleanupSession = useCallback(() => {
-    console.log('[RTC] Cleaning up session resources');
+    // console.log('[RTC] Cleaning up session resources');
 
     // Close PeerConnection
     if (pcRef.current) {
@@ -157,13 +157,13 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
       (prevConfig.topic !== topic || prevConfig.mode !== mode);
 
     if (isEnding) {
-      console.log('[RTC] Session ending - cleanup');
+      // console.log('[RTC] Session ending - cleanup');
       cleanupSession();
     } else if (isChanging) {
-      console.log('[RTC] Session config changed - cleanup and reset');
+      // console.log('[RTC] Session config changed - cleanup and reset');
       cleanupSession();
     } else if (isNewSession) {
-      console.log('[RTC] New session starting - reset state');
+      // console.log('[RTC] New session starting - reset state');
       resetSessionState();
     }
 
@@ -173,7 +173,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   // -- Cleanup on Unmount --
   useEffect(() => {
     return () => {
-      console.log('[RTC] Component unmounting - full cleanup');
+      // console.log('[RTC] Component unmounting - full cleanup');
       cleanupSession();
     };
   }, [cleanupSession]);
@@ -233,9 +233,9 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   };
 
   const handlePeerReady = useCallback(async () => {
-    console.log('[RTC] Peer Ready');
+    // console.log('[RTC] Peer Ready');
     if (queue.isInitiator && pcRef.current?.localDescription) {
-      console.log('[RTC] Re-sending cached offer to new peer');
+      // console.log('[RTC] Re-sending cached offer to new peer');
       await signalingActionsRef.current?.sendOffer(
         pcRef.current.localDescription.sdp
       );
@@ -245,7 +245,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const handleOffer = useCallback(async (sdp: string) => {
     const pc = pcRef.current;
     if (!pc) return;
-    console.log('[RTC] Handle Offer');
+    // console.log('[RTC] Handle Offer');
     if (
       pc.signalingState !== 'stable' &&
       pc.signalingState !== 'have-remote-offer'
@@ -291,7 +291,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const onAnswerWrapper = useCallback(async (sdp: string) => {
     const pc = pcRef.current;
     if (!pc) return;
-    console.log('[RTC] Handle Answer');
+    // console.log('[RTC] Handle Answer');
     if (pc.signalingState === 'have-local-offer') {
       await pc.setRemoteDescription({ type: 'answer', sdp });
       await flushCandidates();
@@ -300,17 +300,17 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
 
   const onIceCandidateWrapper = useCallback(
     async (candidate: RTCIceCandidateInit) => {
-      console.log('[RTC] Received ICE Candidate');
+      // console.log('[RTC] Received ICE Candidate');
       const pc = pcRef.current;
       if (!pc) {
         console.warn('[RTC] Received ICE but PC is null');
         return;
       }
       if (!pc.remoteDescription?.type) {
-        console.log('[RTC] Buffering ICE Candidate (no remote desc)');
+        // console.log('[RTC] Buffering ICE Candidate (no remote desc)');
         pendingIceCandidatesRef.current.push(candidate);
       } else {
-        console.log('[RTC] Adding ICE Candidate');
+        // console.log('[RTC] Adding ICE Candidate');
         try {
           await pc.addIceCandidate(candidate);
         } catch (e) {
@@ -325,7 +325,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const pathname = usePathname();
 
   const onEndSessionWrapper = useCallback(() => {
-    console.log('[RTC] Session ended by peer');
+    // console.log('[RTC] Session ended by peer');
 
     // Check if we are on the session page
     const isOnSessionPage = pathname?.includes('/connect/session');
@@ -407,15 +407,15 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     // 5. ICE Events
     pc.onicecandidate = (ev) => {
       if (ev.candidate) {
-        console.log('[RTC] Generated ICE candidate:', ev.candidate.candidate);
+        // console.log('[RTC] Generated ICE candidate:', ev.candidate.candidate);
         signaling.sendIceCandidate(ev.candidate);
       } else {
-        console.log('[RTC] End of ICE candidates');
+        // console.log('[RTC] End of ICE candidates');
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log('[RTC] Connection State Change:', pc.connectionState);
+      // console.log('[RTC] Connection State Change:', pc.connectionState);
       if (pc.connectionState === 'connected') updateStatus('connected');
       if (['disconnected', 'closed', 'failed'].includes(pc.connectionState)) {
         console.warn('[RTC] Connection failed/closed');
@@ -424,11 +424,11 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log('[RTC] ICE Connection State:', pc.iceConnectionState);
+      // console.log('[RTC] ICE Connection State:', pc.iceConnectionState);
     };
 
     pc.onicegatheringstatechange = () => {
-      console.log('[RTC] ICE Gathering State:', pc.iceGatheringState);
+      // console.log('[RTC] ICE Gathering State:', pc.iceGatheringState);
     };
 
     // 6. Start Negotiation (Initiator)
@@ -490,7 +490,7 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   );
 
   const end = useCallback(() => {
-    console.log('[RTC] User ending session');
+    // console.log('[RTC] User ending session');
     // 1. Signal peer
     signaling.sendEndSession();
     // 2. Leave queue
@@ -502,18 +502,28 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   }, [signaling, queue, cleanupSession, updateStatus]);
 
   const requestLocalAudio = useCallback(async () => {
-    const ok = await media.requestAudio();
-    if (ok && media.stream && pcRef.current) {
+    // We get the stream directly to avoid stale closures
+    const stream = await media.requestAudio();
+    
+    if (stream && pcRef.current) {
+      // console.log('[RTC] Adding audio tracks to existing connection');
       // Add tracks to existing PC
-      media.stream
-        .getTracks()
-        .forEach((t) => pcRef.current?.addTrack(t, media.stream!));
-      // Need to renegotiate?
-      // In simple apps, usually done before connection.
-      // If done mid-call, we need 'negotiationneeded'.
+      stream.getTracks().forEach((t) => pcRef.current?.addTrack(t, stream));
+
+      // Manually trigger negotiation since we are adding tracks mid-call
+      if (pcRef.current.signalingState === 'stable' || pcRef.current.signalingState === 'have-remote-offer') {
+        try {
+          // console.log('[RTC] Renegotiating for new audio tracks');
+          const offer = await pcRef.current.createOffer();
+          await pcRef.current.setLocalDescription(offer);
+          await signaling.sendOffer(offer.sdp!);
+        } catch (err) {
+          console.error('[RTC] Renegotiation failed:', err);
+        }
+      }
     }
-    return ok;
-  }, [media]);
+    return !!stream;
+  }, [media, signaling]);
 
   return {
     // State

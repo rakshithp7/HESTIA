@@ -14,7 +14,7 @@ type UseMediaDeviceResult = {
   micPermissionChecked: boolean;
   muted: boolean;
   error: 'permission-denied' | 'no-mic' | 'media-error' | null;
-  requestAudio: () => Promise<boolean>;
+  requestAudio: () => Promise<MediaStream | null>;
   toggleMute: () => void;
   stopTracks: () => void;
 };
@@ -40,20 +40,18 @@ export function useMediaDevice(mode: SessionMode): UseMediaDeviceResult {
     }
   }, []);
 
-  const requestAudio = useCallback(async (): Promise<boolean> => {
+  const requestAudio = useCallback(async (): Promise<MediaStream | null> => {
     console.log('requestLocalAudio called');
     setError(null);
 
-    if (isChatMode) {
-      console.log('requestLocalAudio skipped in chat-only mode');
-      return false;
-    }
+    // Allow requesting audio even in chat mode if invoked manually
+    // if (isChatMode) { ... } logic removed
 
     try {
       // Don't request again if we already have a stream
       if (streamRef.current && micReady) {
         console.log('Microphone already enabled');
-        return true;
+        return streamRef.current;
       }
 
       // Only use DetectRTC in browser environment
@@ -63,12 +61,12 @@ export function useMediaDevice(mode: SessionMode): UseMediaDeviceResult {
         if (!detectRTC.isWebRTCSupported) {
           console.log('WebRTC not supported');
           setError('media-error');
-          return false;
+          return null;
         }
         if (!detectRTC.hasMicrophone) {
           console.log('No microphone detected');
           setError('no-mic');
-          return false;
+          return null;
         }
       }
 
@@ -78,7 +76,7 @@ export function useMediaDevice(mode: SessionMode): UseMediaDeviceResult {
         !navigator.mediaDevices?.getUserMedia
       ) {
         setError('media-error');
-        return false;
+        return null;
       }
       const newStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
@@ -89,7 +87,7 @@ export function useMediaDevice(mode: SessionMode): UseMediaDeviceResult {
       streamRef.current = newStream;
       setStream(newStream);
       setMicReady(true);
-      return true;
+      return newStream;
     } catch (err: unknown) {
       console.error('Error accessing microphone:', err);
       const name = (err as Error)?.name || '';
@@ -103,9 +101,9 @@ export function useMediaDevice(mode: SessionMode): UseMediaDeviceResult {
         console.log('Media error');
         setError('media-error');
       }
-      return false;
+      return null;
     }
-  }, [isChatMode, micReady]);
+  }, [micReady]);
 
   // Initial Check
   useEffect(() => {

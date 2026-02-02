@@ -36,7 +36,7 @@ export function useSignaling(
   useEffect(() => {
     if (!roomId) return;
 
-    console.log('[RTC] Subscribing to room:', roomId);
+    // console.log('[RTC] Subscribing to room:', roomId);
     const channel = supabase.channel(`rtc:room:${roomId}`, {
       config: { broadcast: { ack: true } },
     });
@@ -98,7 +98,7 @@ export function useSignaling(
       });
 
     return () => {
-      console.log('[RTC] Unsubscribing room:', roomId);
+      // console.log('[RTC] Unsubscribing room:', roomId);
       channel.unsubscribe();
       channelRef.current = null;
     };

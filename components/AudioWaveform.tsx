@@ -36,32 +36,53 @@ export default function AudioWaveform({
   // Track audio tracks count to detect changes
   const [audioTrackCount, setAudioTrackCount] = useState(0);
 
-  // Update track count when stream changes
+  // Update track count when stream changes or tracks are added/removed
   useEffect(() => {
-    const count = audioStream?.getAudioTracks().length || 0;
-    setAudioTrackCount(count);
+    const updateTrackCount = () => {
+      setAudioTrackCount(audioStream?.getAudioTracks().length || 0);
+    };
+
+    updateTrackCount();
+
+    if (audioStream) {
+      audioStream.addEventListener('addtrack', updateTrackCount);
+      audioStream.addEventListener('removetrack', updateTrackCount);
+    }
+
+    return () => {
+      if (audioStream) {
+        audioStream.removeEventListener('addtrack', updateTrackCount);
+        audioStream.removeEventListener('removetrack', updateTrackCount);
+      }
+    };
   }, [audioStream]);
 
-  // Set up audio analyzer when stream is available and has audio tracks
+  // Cleanup AudioContext on unmount
   useEffect(() => {
-    if (!audioStream || !isActive || audioTrackCount === 0) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-
+    return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(() => {});
         audioContextRef.current = null;
       }
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
-      analyzerRef.current = null;
+  // Set up audio analyzer when stream is available and has audio tracks
+  useEffect(() => {
+    if (!audioStream || !isActive || audioTrackCount === 0) {
+      // Clean up visualization if stream becomes invalid/inactive
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
       return;
     }
 
-    // Create audio context and analyzer if needed
+    // Initialize AudioContext if not exists
     if (!audioContextRef.current) {
-      // Handle AudioContext with proper typing
       const AudioContextClass =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: new () => AudioContext })
@@ -81,23 +102,37 @@ export default function AudioWaveform({
       }
     }
 
-    // Connect stream to analyzer
-    if (!audioContextRef.current || !analyzerRef.current) return;
+    const context = audioContextRef.current;
+    const analyzer = analyzerRef.current;
 
-    const source = audioContextRef.current.createMediaStreamSource(audioStream);
-    source.connect(analyzerRef.current);
+    if (!context || !analyzer) return;
+
+    // Resume context if suspended
+    if (context.state === 'suspended') {
+      context.resume().catch((err) => {
+        console.error('Failed to resume audio context:', err);
+      });
+    }
+
+    // Connect stream to analyzer
+    let source: MediaStreamAudioSourceNode | null = null;
+    try {
+      source = context.createMediaStreamSource(audioStream);
+      source.connect(analyzer);
+    } catch (err) {
+      console.error('Error creating MediaStreamSource:', err);
+      return;
+    }
 
     // Start visualization loop
-    const analyzer = analyzerRef.current;
     const dataArray = new Uint8Array(analyzer.frequencyBinCount);
 
     const updateLevels = () => {
-      const analyzer = analyzerRef.current;
       if (!analyzer || !isActive) return;
 
       // If muted, show flat line regardless of audio input
       if (muted) {
-        setLevels(Array(barCount).fill(5)); // Minimum height for visibility
+        setLevels(Array(barCount).fill(5));
         animationRef.current = requestAnimationFrame(updateLevels);
         return;
       }
@@ -105,7 +140,6 @@ export default function AudioWaveform({
       analyzer.getByteFrequencyData(dataArray);
 
       // Check if there's any sound using the configurable threshold
-      // Calculate average sound level for better detection
       const avgSoundLevel =
         Array.from(dataArray).reduce((sum, value) => sum + value, 0) /
         dataArray.length;
@@ -115,7 +149,6 @@ export default function AudioWaveform({
       const newLevels = Array(barCount).fill(0);
 
       if (hasSoundActivity) {
-        // Only show waveform activity if there's sound
         const step = Math.floor(dataArray.length / barCount);
 
         for (let i = 0; i < barCount; i++) {
@@ -124,14 +157,12 @@ export default function AudioWaveform({
           for (let j = 0; j < step; j++) {
             sum += dataArray[start + j] || 0;
           }
-          // Normalize to 0-100 and add some base height
           const avg = sum / step;
           newLevels[i] = Math.max(5, Math.min(100, (avg / 255) * 100));
         }
       } else {
-        // If no sound, set all bars to minimum height (flat line)
         for (let i = 0; i < barCount; i++) {
-          newLevels[i] = 5; // Minimum height for visibility
+          newLevels[i] = 5;
         }
       }
 
@@ -145,7 +176,9 @@ export default function AudioWaveform({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      source.disconnect();
+      if (source) {
+        source.disconnect();
+      }
     };
   }, [audioStream, isActive, barCount, muted, soundThreshold, audioTrackCount]);
 

@@ -99,7 +99,7 @@ export function useMatchQueue({
 
     try {
       await supabase.from('match_queue').delete().eq('id', queueId);
-      console.log('[RTC] Removed from match queue', queueId);
+      // console.log('[RTC] Removed from match queue', queueId);
     } catch (err) {
       console.error('[RTC] Failed to remove from queue', err);
     }
@@ -152,7 +152,7 @@ export function useMatchQueue({
       if (error) throw error;
 
       setActiveQueueId(data.id);
-      console.log('[RTC] Entered match queue', data.id);
+      // console.log('[RTC] Entered match queue', data.id);
     } catch (err) {
       console.error('[RTC] Queue entry failed', err);
       setStatus('error');
@@ -202,7 +202,7 @@ export function useMatchQueue({
           return;
         }
 
-        console.log('[RTC] Consented to:', target.queueId);
+        // console.log('[RTC] Consented to:', target.queueId);
         hasConsentedToQueueIdRef.current = target.queueId;
 
         const isPeerKnownConsented =
@@ -283,7 +283,7 @@ export function useMatchQueue({
         } else {
           const match = data && data[0];
           if (match && match.match_found) {
-            console.log('[RTC] Match found via RPC!', match);
+            // console.log('[RTC] Match found via RPC!', match);
             setIsInitiator(true);
             setRoomId(match.match_room_id);
             setPeerUserId(match.peer_user_id);
@@ -382,7 +382,7 @@ export function useMatchQueue({
             room_id: string;
           };
           if (newRow.status === 'matched' && newRow.room_id) {
-            console.log('[RTC] Match found via Realtime!', newRow.room_id);
+            // console.log('[RTC] Match found via Realtime!', newRow.room_id);
             setIsInitiator(false); // Passive
             setRoomId(newRow.room_id);
             // Wait, we need peerUserId. Ideally the row would have it or we fetch it?
