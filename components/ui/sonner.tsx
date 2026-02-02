@@ -11,6 +11,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps['theme']}
       className="toaster group !font-unna"
       position="bottom-center"
+      toastOptions={{
+        classNames: {
+          toast: 'text-base',
+          title: 'text-base',
+          description: 'text-sm',
+        },
+      }}
       style={
         {
           '--normal-bg': 'var(--popover)',

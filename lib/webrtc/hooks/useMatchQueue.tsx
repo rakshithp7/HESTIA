@@ -4,12 +4,12 @@ import {
   useEffect,
   useCallback,
   useMemo,
-  createElement,
 } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { SuggestedMatch, RTCSessionConfig } from '../types';
+import { MatchRequestToast } from '@/components/MatchRequestToast';
 
 // Matchmaking Constants
 const POLLING_INTERVAL_MS = 3000;
@@ -415,104 +415,14 @@ export function useMatchQueue({
             // Toast logic...
             const peerTopic = signal.topic ? `"${signal.topic}"` : 'A peer';
             toast.custom(
-              (t) =>
-                createElement(
-                  'div',
-                  {
-                    className:
-                      'relative overflow-hidden bg-accent border-border border rounded-xl p-4 shadow-lg flex flex-col justify-around min-w-[350px] min-h-[180px]',
-                    style: { pointerEvents: 'auto' },
-                  },
-                  [
-                    createElement(
-                      'div',
-                      {
-                        key: 'content',
-                        className: 'flex flex-col gap-1 items-center',
-                      },
-                      [
-                        createElement(
-                          'div',
-                          {
-                            key: 'msg',
-                            className: 'text-xl font-medium text-foreground',
-                          },
-                          `${peerTopic} wants to connect!`
-                        ),
-                        createElement(
-                          'div',
-                          {
-                            key: 'desc',
-                            className: 'text-base text-muted-foreground',
-                          },
-                          'They are suggested as a similar match.'
-                        ),
-                      ]
-                    ),
-                    createElement(
-                      'div',
-                      {
-                        key: 'actions',
-                        className: 'flex gap-2 justify-center',
-                      },
-                      [
-                        createElement(
-                          'button',
-                          {
-                            key: 'skip',
-                            className:
-                              'inline-flex items-center justify-center rounded-md border border-gray-300 bg-transparent h-11 px-8 text-base font-medium text-gray-400 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-300 hover:text-gray-700',
-                            onClick: () => {
-                              sendSignal('reject', signal.fromQueueId);
-                              toast.dismiss(t);
-                            },
-                          },
-                          'Dismiss'
-                        ),
-                        createElement(
-                          'button',
-                          {
-                            key: 'conn',
-                            className:
-                              'inline-flex items-center justify-center rounded-md bg-primary h-11 px-8 text-base font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90',
-                            onClick: () => {
-                              acceptSuggestedMatch(
-                                { queueId: signal.fromQueueId },
-                                true
-                              );
-                              toast.dismiss(t);
-                            },
-                          },
-                          'Connect'
-                        ),
-                      ]
-                    ),
-                    createElement(
-                      'div',
-                      {
-                        key: 'progress-outer',
-                        className: 'absolute bottom-1 left-4 right-4 h-1',
-                      },
-                      [
-                        createElement(
-                          'div',
-                          {
-                            key: 'progress-track',
-                            className:
-                              'h-full w-full bg-primary/20 rounded-full overflow-hidden',
-                          },
-                          [
-                            createElement('div', {
-                              key: 'progress-inner',
-                              className:
-                                'h-full bg-primary origin-left animate-toast-progress rounded-full',
-                            }),
-                          ]
-                        ),
-                      ]
-                    ),
-                  ]
-                ),
+              (t) => (
+                <MatchRequestToast
+                  peerTopic={peerTopic}
+                  toastId={t}
+                  onAccept={() => acceptSuggestedMatch({ queueId: signal.fromQueueId }, true)}
+                  onDismiss={() => sendSignal('reject', signal.fromQueueId)}
+                />
+              ),
               { duration: 5000 }
             );
           }
