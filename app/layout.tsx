@@ -2,10 +2,14 @@ import type { Metadata } from 'next';
 import { Unna } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
-import { ThemeProvider } from '@/components/providers/theme-provider';
-import { AccessibilityProvider } from '@/components/providers/accessibility-provider';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { AccessibilityProvider } from '@/components/providers/AccessibilityProvider';
+import { RTCSessionProvider } from '@/components/providers/RTCSessionProvider';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/sonner';
+import { FloatingSessionWindow } from '@/components/session/FloatingSessionWindow';
+import { ConnectedSessionStatusBar } from '@/components/session/ConnectedSessionStatusBar';
+import { SessionTitleHandler } from '@/components/session/SessionTitleHandler';
 
 const unna = Unna({
   variable: '--font-unna',
@@ -62,14 +66,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${unna.variable} ${difont.variable} ${openDyslexic.variable} antialiased`}>
+      <body
+        className={`${unna.variable} ${difont.variable} ${openDyslexic.variable} antialiased`}
+      >
         <ThemeProvider>
           <AccessibilityProvider>
-            <div className="relative">
-              <Navbar />
-              {children}
-            </div>
-            <Toaster />
+            <RTCSessionProvider>
+              <div className="relative">
+                <ConnectedSessionStatusBar />
+                <Navbar />
+                {children}
+                <FloatingSessionWindow />
+                <SessionTitleHandler />
+              </div>
+              <Toaster />
+            </RTCSessionProvider>
           </AccessibilityProvider>
         </ThemeProvider>
       </body>

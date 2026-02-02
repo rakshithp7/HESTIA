@@ -6,7 +6,10 @@ import { isBanActive } from '@/lib/moderation/bans';
 
 export const runtime = 'nodejs';
 
-export async function GET(_: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
@@ -24,7 +27,10 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
 
     if (reportError) {
       console.error('[admin/report] Failed to load report', reportError);
-      return NextResponse.json({ error: 'Failed to load report' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to load report' },
+        { status: 500 }
+      );
     }
 
     if (!report) {
@@ -39,7 +45,10 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
 
     if (bansError && bansError.code !== 'PGRST116') {
       console.error('[admin/report] Failed to load bans', bansError);
-      return NextResponse.json({ error: 'Failed to load bans' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to load bans' },
+        { status: 500 }
+      );
     }
 
     const typedBans = (bans ?? []) as UserBan[];
@@ -52,6 +61,9 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
     });
   } catch (error) {
     console.error('[admin/report] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

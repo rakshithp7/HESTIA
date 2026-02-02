@@ -14,7 +14,10 @@ export async function POST(req: Request) {
   const signature = req.headers.get('stripe-signature');
 
   if (!signature) {
-    return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing Stripe signature' },
+      { status: 400 }
+    );
   }
 
   let event: Stripe.Event;
@@ -31,7 +34,8 @@ export async function POST(req: Request) {
     case 'identity.verification_session.requires_input':
     case 'identity.verification_session.canceled':
     case 'identity.verification_session.processing': {
-      const verificationSession = event.data.object as Stripe.Identity.VerificationSession;
+      const verificationSession = event.data
+        .object as Stripe.Identity.VerificationSession;
       await handleVerificationSessionUpdate(verificationSession);
       break;
     }
@@ -42,11 +46,16 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 
-async function handleVerificationSessionUpdate(session: Stripe.Identity.VerificationSession) {
+async function handleVerificationSessionUpdate(
+  session: Stripe.Identity.VerificationSession
+) {
   const profileId = session.metadata?.profile_id;
 
   if (!profileId) {
-    console.warn('[identity/webhook] Verification session missing profile metadata', session.id);
+    console.warn(
+      '[identity/webhook] Verification session missing profile metadata',
+      session.id
+    );
     return;
   }
 
@@ -54,10 +63,12 @@ async function handleVerificationSessionUpdate(session: Stripe.Identity.Verifica
 
   const verificationStatus = nextProfileStatusForSession(session);
   const isVerified = verificationStatus === 'verified';
-  const isTerminal = session.status === 'verified' || session.status === 'canceled';
+  const isTerminal =
+    session.status === 'verified' || session.status === 'canceled';
 
   const lastReport = session.last_verification_report;
-  const lastReportId = typeof lastReport === 'string' ? lastReport : lastReport?.id ?? null;
+  const lastReportId =
+    typeof lastReport === 'string' ? lastReport : (lastReport?.id ?? null);
 
   const updatePayload: Record<string, unknown> = {
     verification_status: verificationStatus,
@@ -69,28 +80,38 @@ async function handleVerificationSessionUpdate(session: Stripe.Identity.Verifica
 
   if (isVerified) {
     try {
-      const sensitiveSession = await retrieveSensitiveVerificationSession(session.id, {
-        expand: ['verified_outputs.dob', 'last_verification_report.document'],
-      });
+      const sensitiveSession = await retrieveSensitiveVerificationSession(
+        session.id,
+        {
+          expand: ['verified_outputs.dob', 'last_verification_report.document'],
+        }
+      );
       const reportObject =
         typeof sensitiveSession.last_verification_report === 'object'
           ? sensitiveSession.last_verification_report
           : null;
-      const dob = sensitiveSession.verified_outputs?.dob ?? reportObject?.document?.dob;
+      const dob =
+        sensitiveSession.verified_outputs?.dob ?? reportObject?.document?.dob;
       if (dob?.day && dob?.month && dob?.year) {
         const dobIso = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`;
         updatePayload.date_of_birth = dobIso;
       }
     } catch (error) {
-      console.error('[identity/webhook] Failed to retrieve sensitive verification session for DOB', {
-        profileId,
-        sessionId: session.id,
-        error,
-      });
+      console.error(
+        '[identity/webhook] Failed to retrieve sensitive verification session for DOB',
+        {
+          profileId,
+          sessionId: session.id,
+          error,
+        }
+      );
     }
   }
 
-  const { error } = await supabase.from('profiles').update(updatePayload).eq('id', profileId);
+  const { error } = await supabase
+    .from('profiles')
+    .update(updatePayload)
+    .eq('id', profileId);
 
   if (error) {
     console.error('[identity/webhook] Failed to update profile', {

@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -31,15 +37,24 @@ type BlockedUser = {
   lastName: string | null;
 };
 
-export default function ProfileClient({ email, firstName, lastName, initialSection }: ProfileClientProps) {
+export default function ProfileClient({
+  email,
+  firstName,
+  lastName,
+  initialSection,
+}: ProfileClientProps) {
   const supabase = createSupabaseBrowserClient();
 
   const sanitizeSection = useCallback((section?: string): NavItemId => {
     const candidate = section as NavItemId | undefined;
-    return candidate && NAV_ITEMS.some((item) => item.id === candidate) ? candidate : 'profile';
+    return candidate && NAV_ITEMS.some((item) => item.id === candidate)
+      ? candidate
+      : 'profile';
   }, []);
 
-  const [activeSection, setActiveSection] = useState<NavItemId>(() => sanitizeSection(initialSection));
+  const [activeSection, setActiveSection] = useState<NavItemId>(() =>
+    sanitizeSection(initialSection)
+  );
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +65,11 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const displayName =
-    [firstName, lastName].filter((part) => (part ?? '').trim().length > 0).join(' ') || email || 'Account';
+    [firstName, lastName]
+      .filter((part) => (part ?? '').trim().length > 0)
+      .join(' ') ||
+    email ||
+    'Account';
 
   const fetchBlockedUsers = useCallback(async () => {
     setBlockedLoading(true);
@@ -144,22 +163,27 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
     }
 
     if (!blockedUsers.length) {
-      return <p className="text-base text-muted-foreground">You haven’t blocked anyone yet.</p>;
+      return (
+        <p className="text-base text-muted-foreground">
+          You haven’t blocked anyone yet.
+        </p>
+      );
     }
 
     return (
       <ul className="space-y-3">
         {blockedUsers.map((blockedUser) => {
-      const initials = [blockedUser.firstName, blockedUser.lastName]
-        .filter((part) => (part ?? '').trim().length > 0)
-        .map((part) => (part ?? '').trim().charAt(0).toUpperCase())
-        .join('');
-      const label = initials || 'Blocked user';
+          const initials = [blockedUser.firstName, blockedUser.lastName]
+            .filter((part) => (part ?? '').trim().length > 0)
+            .map((part) => (part ?? '').trim().charAt(0).toUpperCase())
+            .join('');
+          const label = initials || 'Blocked user';
 
           return (
             <li
               key={blockedUser.id}
-              className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2">
+              className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 px-3 py-2"
+            >
               <div>
                 <p className="text-base font-medium text-foreground">{label}</p>
                 <p className="text-xs text-muted-foreground">
@@ -170,7 +194,8 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                 size="sm"
                 variant="outline"
                 disabled={removingId === blockedUser.id}
-                onClick={() => handleUnblock(blockedUser.id)}>
+                onClick={() => handleUnblock(blockedUser.id)}
+              >
                 {removingId === blockedUser.id ? 'Removing…' : 'Unblock'}
               </Button>
             </li>
@@ -184,13 +209,22 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
     <div className="px-6 py-8 md:px-12">
       <div className="mx-auto max-w-5xl space-y-8 text-foreground">
         <header className="space-y-2">
-          <p className="text-lg uppercase tracking-[0.15em] text-foreground">Account</p>
-          <h1 className="text-3xl md:text-4xl font-semibold">Welcome back, {displayName}</h1>
-          <p className="text-base text-foreground">Manage your password and review your verification status.</p>
+          <p className="text-lg uppercase tracking-[0.15em] text-foreground">
+            Account
+          </p>
+          <h1 className="text-3xl md:text-4xl font-semibold">
+            Welcome back, {displayName}
+          </h1>
+          <p className="text-base text-foreground">
+            Manage your password and review your verification status.
+          </p>
         </header>
 
         <div className="md:hidden">
-          <Select value={activeSection} onValueChange={(value) => setActiveSection(value as NavItemId)}>
+          <Select
+            value={activeSection}
+            onValueChange={(value) => setActiveSection(value as NavItemId)}
+          >
             <SelectTrigger className="w-full justify-between h-12! text-foreground">
               <SelectValue placeholder="Choose section" />
             </SelectTrigger>
@@ -221,7 +255,8 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                           isActive
                             ? 'bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-border/60'
                             : 'text-foreground/70 hover:bg-muted/50 hover:text-foreground'
-                        )}>
+                        )}
+                      >
                         {item.label}
                       </Button>
                     </li>
@@ -236,12 +271,20 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
               <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm backdrop-blur text-foreground">
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Security</h2>
-                  <p className="text-base text-foreground">Update your password to keep your account protected.</p>
+                  <p className="text-base text-foreground">
+                    Update your password to keep your account protected.
+                  </p>
                 </div>
 
-                <form onSubmit={handlePasswordChange} className="space-y-4 max-w-xl">
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="space-y-4 max-w-xl"
+                >
                   <div className="space-y-2">
-                    <Label htmlFor="new-password" className="text-base font-medium text-foreground">
+                    <Label
+                      htmlFor="new-password"
+                      className="text-base font-medium text-foreground"
+                    >
                       New password
                     </Label>
                     <Input
@@ -256,8 +299,14 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                       required
                     />
                   </div>
-                  {error ? <p className="text-base text-destructive">{error}</p> : null}
-                  {success ? <p className="text-base text-emerald-600 dark:text-emerald-400">{success}</p> : null}
+                  {error ? (
+                    <p className="text-base text-destructive">{error}</p>
+                  ) : null}
+                  {success ? (
+                    <p className="text-base text-emerald-600 dark:text-emerald-400">
+                      {success}
+                    </p>
+                  ) : null}
                   <Button type="submit" disabled={loading}>
                     {loading ? 'Updating…' : 'Update password'}
                   </Button>
@@ -268,7 +317,9 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
             {activeSection === 'verification' ? (
               <section className="space-y-6 rounded-2xl border border-border/60 bg-card/20 p-6 shadow-sm text-foreground">
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold">Verification status</h2>
+                  <h2 className="text-2xl font-semibold">
+                    Verification status
+                  </h2>
                   <p className="text-base text-foreground">
                     View your current status or resume the Stripe Identity flow.
                   </p>
@@ -282,13 +333,13 @@ export default function ProfileClient({ email, firstName, lastName, initialSecti
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold">Blocked users</h2>
                   <p className="text-base text-foreground">
-                    Manage the people you’ve blocked. Removing someone allows the matching system to pair you again.
+                    Manage the people you’ve blocked. Removing someone allows
+                    the matching system to pair you again.
                   </p>
                 </div>
                 {renderBlockedUsers()}
               </section>
             ) : null}
-
           </main>
         </div>
       </div>

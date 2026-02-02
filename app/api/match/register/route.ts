@@ -17,7 +17,10 @@ export async function POST(req: Request) {
 
     if (userError) {
       console.error('[match/register] Supabase user error', userError);
-      return NextResponse.json({ error: 'Unable to verify session' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to verify session' },
+        { status: 500 }
+      );
     }
 
     if (!user) {
@@ -28,7 +31,12 @@ export async function POST(req: Request) {
 
     if (ban) {
       return NextResponse.json(
-        { error: 'User is banned', bannedUntil: ban.ends_at, reason: ban.reason, banId: ban.id },
+        {
+          error: 'User is banned',
+          bannedUntil: ban.ends_at,
+          reason: ban.reason,
+          banId: ban.id,
+        },
         { status: 403 }
       );
     }
@@ -41,21 +49,33 @@ export async function POST(req: Request) {
     } | null;
 
     if (!payload) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
     }
 
     const { roomId, topic, mode, peerUserId } = payload;
 
     if (!roomId || !topic || !mode || !peerUserId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
 
     if (!VALID_MODES.has(mode)) {
-      return NextResponse.json({ error: 'Invalid session mode' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid session mode' },
+        { status: 400 }
+      );
     }
 
     if (peerUserId === user.id) {
-      return NextResponse.json({ error: 'Peer cannot be the same as reporter' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Peer cannot be the same as reporter' },
+        { status: 400 }
+      );
     }
 
     const service = getSupabaseServiceClient();
@@ -69,19 +89,27 @@ export async function POST(req: Request) {
 
     if (blockedError) {
       console.error('[match/register] Block lookup failed', blockedError);
-      return NextResponse.json({ error: 'Failed to verify safety status' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to verify safety status' },
+        { status: 500 }
+      );
     }
 
     const blockedBySelf = blockedRows?.some(
-      (entry) => entry.user_id === user.id && entry.blocked_user_id === peerUserId
+      (entry) =>
+        entry.user_id === user.id && entry.blocked_user_id === peerUserId
     );
     const blockedByPeer = blockedRows?.some(
-      (entry) => entry.user_id === peerUserId && entry.blocked_user_id === user.id
+      (entry) =>
+        entry.user_id === peerUserId && entry.blocked_user_id === user.id
     );
 
     if (blockedBySelf || blockedByPeer) {
       return NextResponse.json(
-        { error: 'Users are blocked from matching', blockedBy: blockedBySelf ? 'self' : 'peer' },
+        {
+          error: 'Users are blocked from matching',
+          blockedBy: blockedBySelf ? 'self' : 'peer',
+        },
         { status: 409 }
       );
     }
@@ -101,12 +129,18 @@ export async function POST(req: Request) {
 
     if (upsertError) {
       console.error('[match/register] Failed to store match', upsertError);
-      return NextResponse.json({ error: 'Unable to store active match' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to store active match' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ roomId });
   } catch (error) {
     console.error('[match/register] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

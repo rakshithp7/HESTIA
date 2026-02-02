@@ -45,15 +45,19 @@ export function ReportDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Report this conversation</DialogTitle>
-          <DialogDescription className='text-base'>
-            Select everything that applies. We will end this session and match you with someone new.
+          <DialogDescription className="text-base">
+            Select everything that applies. We will end this session and match
+            you with someone new.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {REPORT_REASONS.map((reason) => {
             const checked = reasons.includes(reason);
             return (
-              <label key={reason} className="flex items-center gap-3 rounded-lg p-1">
+              <label
+                key={reason}
+                className="flex items-center gap-3 rounded-lg p-1"
+              >
                 <Checkbox
                   checked={checked}
                   onCheckedChange={() => toggleReason(reason)}
@@ -76,17 +80,24 @@ export function ReportDialog({
             maxLength={500}
             aria-label="Additional report details"
           />
-          <p className="text-sm text-muted-foreground text-right">{notes.length}/500</p>
+          <p className="text-sm text-muted-foreground text-right">
+            {notes.length}/500
+          </p>
         </div>
         <DialogFooter>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}>
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={isSubmitting || reasons.length === 0}>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting || reasons.length === 0}
+          >
             {isSubmitting ? 'Submitting…' : 'Submit report'}
           </Button>
         </DialogFooter>

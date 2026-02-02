@@ -12,7 +12,9 @@ type AdminGuardFailure = {
   response: NextResponse;
 };
 
-export async function requireAdminUser(): Promise<AdminGuardSuccess | AdminGuardFailure> {
+export async function requireAdminUser(): Promise<
+  AdminGuardSuccess | AdminGuardFailure
+> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -22,7 +24,10 @@ export async function requireAdminUser(): Promise<AdminGuardSuccess | AdminGuard
   if (userError) {
     console.error('[admin] Supabase user error', userError);
     return {
-      response: NextResponse.json({ error: 'Unable to verify session' }, { status: 500 }),
+      response: NextResponse.json(
+        { error: 'Unable to verify session' },
+        { status: 500 }
+      ),
     };
   }
 
@@ -41,7 +46,10 @@ export async function requireAdminUser(): Promise<AdminGuardSuccess | AdminGuard
   if (profileError) {
     console.error('[admin] Failed to load profile', profileError);
     return {
-      response: NextResponse.json({ error: 'Unable to load profile' }, { status: 500 }),
+      response: NextResponse.json(
+        { error: 'Unable to load profile' },
+        { status: 500 }
+      ),
     };
   }
 

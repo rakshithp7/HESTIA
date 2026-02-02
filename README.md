@@ -1,4 +1,4 @@
-> ⚠️  **Under Development**
+> ⚠️ **Under Development**
 
 <p align="center">
   <img src="./public/logo.svg" alt="Hestia logo" width="180">

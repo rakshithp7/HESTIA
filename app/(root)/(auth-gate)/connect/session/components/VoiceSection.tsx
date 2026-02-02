@@ -29,9 +29,15 @@ export function VoiceSection({
   const getStatusInfo = () => {
     switch (status) {
       case 'waiting':
-        return { text: 'Waiting...', icon: <Loader2 className="size-4 animate-spin" /> };
+        return {
+          text: 'Waiting...',
+          icon: <Loader2 className="size-4 animate-spin" />,
+        };
       case 'connecting':
-        return { text: 'Connecting...', icon: <Loader2 className="size-4 animate-spin" /> };
+        return {
+          text: 'Connecting...',
+          icon: <Loader2 className="size-4 animate-spin" />,
+        };
       case 'connected':
         return { text: 'Connected', icon: null };
       case 'permission-denied':
@@ -41,7 +47,10 @@ export function VoiceSection({
       case 'ended':
         return { text: 'Call ended', icon: null };
       default:
-        return { text: 'Init...', icon: <Loader2 className="size-4 animate-spin" /> };
+        return {
+          text: 'Init...',
+          icon: <Loader2 className="size-4 animate-spin" />,
+        };
     }
   };
 
@@ -49,7 +58,10 @@ export function VoiceSection({
 
   const getMicStatusInfo = () => {
     if (!micPermissionChecked) {
-      return { text: 'Checking mic...', icon: <Loader2 className="size-4 animate-spin" /> };
+      return {
+        text: 'Checking mic...',
+        icon: <Loader2 className="size-4 animate-spin" />,
+      };
     }
     switch (status) {
       case 'permission-denied':
@@ -83,7 +95,12 @@ export function VoiceSection({
             </div>
           )}
         </div>
-        <audio ref={setAudioElementRef} autoPlay playsInline className="hidden" />
+        <audio
+          ref={setAudioElementRef}
+          autoPlay
+          playsInline
+          className="hidden"
+        />
       </div>
 
       {/* Your Voice Panel */}
@@ -99,13 +116,16 @@ export function VoiceSection({
                 color="var(--primary)"
                 className="mb-4 h-16"
               />
-              <div className="text-sm opacity-70 mb-4">{muted ? 'Muted' : 'Speaking'}</div>
+              <div className="text-sm opacity-70 mb-4">
+                {muted ? 'Muted' : 'Speaking'}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1"
                 onClick={() => setMuted(!muted)}
-                aria-label={muted ? 'Unmute' : 'Mute'}>
+                aria-label={muted ? 'Unmute' : 'Mute'}
+              >
                 <MicOff className="size-3" />
                 <span className="text-sm">{muted ? 'Unmute' : 'Mute'}</span>
               </Button>
@@ -117,7 +137,12 @@ export function VoiceSection({
                   variant="outline"
                   size="sm"
                   className="mb-2 gap-1"
-                  onClick={() => requestLocalAudio().catch((err) => console.error('Error enabling microphone:', err))}>
+                  onClick={() =>
+                    requestLocalAudio().catch((err) =>
+                      console.error('Error enabling microphone:', err)
+                    )
+                  }
+                >
                   <Mic className="size-3" />
                   <span className="text-sm">Enable Mic</span>
                 </Button>

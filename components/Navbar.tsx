@@ -27,8 +27,14 @@ const Navbar = () => {
   const supabase = createSupabaseBrowserClient();
 
   const linkClass = (href: string) => {
-    const isActive = href === '/' ? pathname === '/' : pathname?.startsWith(href) || pathname === href;
-    return cn('text-2xl tracking-widest font-difont hover:underline underline-offset-4 mt-2', isActive && 'underline');
+    const isActive =
+      href === '/'
+        ? pathname === '/'
+        : pathname?.startsWith(href) || pathname === href;
+    return cn(
+      'text-2xl tracking-widest font-difont hover:underline underline-offset-4 mt-2',
+      isActive && 'underline'
+    );
   };
 
   useEffect(() => {
@@ -49,7 +55,12 @@ const Navbar = () => {
       }
 
       setIsAuthed(true);
-      setInitials(extractInitials(user.user_metadata as Record<string, unknown> | undefined, user.email ?? null));
+      setInitials(
+        extractInitials(
+          user.user_metadata as Record<string, unknown> | undefined,
+          user.email ?? null
+        )
+      );
 
       try {
         const { data: profile, error } = await supabase
@@ -86,13 +97,18 @@ const Navbar = () => {
     router.replace('/');
   }
 
-  function extractInitials(meta: Record<string, unknown> | undefined, email?: string | null) {
+  function extractInitials(
+    meta: Record<string, unknown> | undefined,
+    email?: string | null
+  ) {
     const first =
       typeof (meta as { first_name?: unknown })?.first_name === 'string'
         ? (meta as { first_name: string }).first_name
         : '';
     const last =
-      typeof (meta as { last_name?: unknown })?.last_name === 'string' ? (meta as { last_name: string }).last_name : '';
+      typeof (meta as { last_name?: unknown })?.last_name === 'string'
+        ? (meta as { last_name: string }).last_name
+        : '';
     const a = first.trim?.()[0];
     const b = last.trim?.()[0];
     if (a || b) return `${a || ''}${b || ''}`.toUpperCase();
@@ -120,7 +136,13 @@ const Navbar = () => {
         {/* Logo */}
         <div className="flex items-center min-w-[40px]">
           <Link href="/">
-            <Image src="/logo.svg" alt="Logo" width={40} height={40} className="object-contain" />
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </Link>
         </div>
         {/* Desktop menu */}
@@ -142,7 +164,13 @@ const Navbar = () => {
           <div className="ml-auto flex items-center gap-6 pr-6">
             <AccessibilityMenu />
             <ThemeToggle />
-            {isAuthed ? <UserAvatar initials={initials} onSignOut={handleSignOut} isAdmin={isAdmin} /> : null}
+            {isAuthed ? (
+              <UserAvatar
+                initials={initials}
+                onSignOut={handleSignOut}
+                isAdmin={isAdmin}
+              />
+            ) : null}
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
@@ -155,7 +183,8 @@ const Navbar = () => {
             size="icon"
             className="h-10 w-10 p-0 flex items-center justify-center"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Open menu">
+            aria-label="Open menu"
+          >
             <Menu className="size-6" />
           </Button>
         </div>
@@ -165,7 +194,8 @@ const Navbar = () => {
         className={`
           md:hidden flex flex-col items-center gap-4 py-4 transition-all duration-300 ease-in-out origin-top absolute left-0 right-0 top-full w-full bg-muted z-50 border-t border-muted-foreground/80
           ${open ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}
-        `}>
+        `}
+      >
         {/* Same links for mobile regardless of auth */}
         <>
           {/* <Link
@@ -177,25 +207,29 @@ const Navbar = () => {
           <Link
             href="/about"
             className="text-lg tracking-widest font-difont hover:underline w-full text-center"
-            onClick={() => setOpen(false)}>
+            onClick={() => setOpen(false)}
+          >
             ABOUT
           </Link>
           <Link
             href="/connect"
             className="text-lg tracking-widest font-difont hover:underline w-full text-center"
-            onClick={() => setOpen(false)}>
+            onClick={() => setOpen(false)}
+          >
             CONNECT
           </Link>
           <Link
             href="/resources"
             className="text-lg tracking-widest font-difont hover:underline w-full text-center"
-            onClick={() => setOpen(false)}>
+            onClick={() => setOpen(false)}
+          >
             RESOURCES
           </Link>
           <Link
             href="/contact"
             className="text-lg tracking-widest font-difont hover:underline w-full text-center"
-            onClick={() => setOpen(false)}>
+            onClick={() => setOpen(false)}
+          >
             CONTACT US
           </Link>
           {isAuthed ? (
@@ -205,7 +239,8 @@ const Navbar = () => {
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
                   aria-label="User menu"
-                  className="size-10 rounded-full bg-foreground text-background font-bold flex items-center justify-center hover:bg-foreground/90 p-0">
+                  className="size-10 rounded-full bg-foreground text-background font-bold flex items-center justify-center hover:bg-foreground/90 p-0"
+                >
                   {initials}
                 </Button>
               </div>
@@ -217,7 +252,8 @@ const Navbar = () => {
                     onClick={() => {
                       setOpen(false);
                       setMenuOpen(false);
-                    }}>
+                    }}
+                  >
                     Profile
                   </Link>
                   {isAdmin ? (
@@ -227,7 +263,8 @@ const Navbar = () => {
                       onClick={() => {
                         setOpen(false);
                         setMenuOpen(false);
-                      }}>
+                      }}
+                    >
                       Admin
                     </Link>
                   ) : null}
@@ -239,7 +276,8 @@ const Navbar = () => {
                       setMenuOpen(false);
                       handleSignOut();
                     }}
-                    className="text-base tracking-widest hover:underline w-full text-center">
+                    className="text-base tracking-widest hover:underline w-full text-center"
+                  >
                     Sign out
                   </Button>
                 </>

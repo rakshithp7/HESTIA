@@ -35,7 +35,9 @@ export default function UpdatePasswordPage() {
   return (
     <div className="screen-height flex items-start md:items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl">
-        <h1 className="text-center text-5xl md:text-6xl tracking-widest uppercase mb-10">SET NEW PASSWORD</h1>
+        <h1 className="text-center text-5xl md:text-6xl tracking-widest uppercase mb-10">
+          SET NEW PASSWORD
+        </h1>
         <form className="mx-auto w-full max-w-xl space-y-6" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="password" className="text-lg tracking-wide">
@@ -51,8 +53,12 @@ export default function UpdatePasswordPage() {
             />
           </div>
 
-          {error ? <p className="text-sm text-destructive -mt-2">{error}</p> : null}
-          {success ? <p className="text-sm">Password updated. Redirecting…</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive -mt-2">{error}</p>
+          ) : null}
+          {success ? (
+            <p className="text-sm">Password updated. Redirecting…</p>
+          ) : null}
 
           <Button type="submit" className="w-full h-10" disabled={loading}>
             {loading ? 'Updating…' : 'Update password'}

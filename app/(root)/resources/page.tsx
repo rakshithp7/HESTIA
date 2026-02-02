@@ -2,7 +2,12 @@
 
 import { Search, ExternalLink } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { ResourceSection } from '@/data/resources';
@@ -18,7 +23,10 @@ function highlightText(text: string, query: string): React.ReactNode {
   const parts = text.split(regex);
   return parts.map((part, index) =>
     part.toLowerCase() === query.toLowerCase() ? (
-      <mark key={`${part}-${index}`} className="rounded-sm bg-yellow-200 px-1 text-inherit dark:bg-yellow-500/60">
+      <mark
+        key={`${part}-${index}`}
+        className="rounded-sm bg-yellow-200 px-1 text-inherit dark:bg-yellow-500/60"
+      >
         {part}
       </mark>
     ) : (
@@ -27,7 +35,13 @@ function highlightText(text: string, query: string): React.ReactNode {
   );
 }
 
-function ResourceLine({ text, highlightQuery }: { text: string; highlightQuery: string }) {
+function ResourceLine({
+  text,
+  highlightQuery,
+}: {
+  text: string;
+  highlightQuery: string;
+}) {
   const isUrl = text.startsWith('http');
   if (isUrl) {
     return (
@@ -35,28 +49,47 @@ function ResourceLine({ text, highlightQuery }: { text: string; highlightQuery: 
         href={text}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-base text-primary hover:underline flex items-center gap-1 w-fit">
+        className="text-base text-primary hover:underline flex items-center gap-1 w-fit"
+      >
         {highlightText(text, highlightQuery)}
         <ExternalLink className="h-3 w-3" />
       </a>
     );
   }
-  return <div className="text-base leading-relaxed">{highlightText(text, highlightQuery)}</div>;
+  return (
+    <div className="text-base leading-relaxed">
+      {highlightText(text, highlightQuery)}
+    </div>
+  );
 }
 
-function SectionDetails({ section, highlightQuery }: { section: ResourceSection; highlightQuery: string }) {
+function SectionDetails({
+  section,
+  highlightQuery,
+}: {
+  section: ResourceSection;
+  highlightQuery: string;
+}) {
   return (
     <div>
-      <h2 className="text-xl md:text-2xl font-medium mb-6">{highlightText(section.title, highlightQuery)}</h2>
+      <h2 className="text-xl md:text-2xl font-medium mb-6">
+        {highlightText(section.title, highlightQuery)}
+      </h2>
       <div className="space-y-8">
         {section.entries.length === 0 ? (
           <p className="text-base">Coming soon.</p>
         ) : (
           section.entries.map((entry) => (
             <div key={entry.name}>
-              <h3 className="text-lg font-semibold">{highlightText(entry.name, highlightQuery)}</h3>
+              <h3 className="text-lg font-semibold">
+                {highlightText(entry.name, highlightQuery)}
+              </h3>
               {entry.lines.map((line, index) => (
-                <ResourceLine key={index} text={line} highlightQuery={highlightQuery} />
+                <ResourceLine
+                  key={index}
+                  text={line}
+                  highlightQuery={highlightQuery}
+                />
               ))}
             </div>
           ))
@@ -69,7 +102,9 @@ function SectionDetails({ section, highlightQuery }: { section: ResourceSection;
 export default function ResourcesPage() {
   const [selectedId, setSelectedId] = useState<string>('hotlines');
   const [query, setQuery] = useState('');
-  const [accordionValue, setAccordionValue] = useState<string | undefined>('hotlines');
+  const [accordionValue, setAccordionValue] = useState<string | undefined>(
+    'hotlines'
+  );
 
   const trimmedQuery = query.trim();
   const normalizedQuery = trimmedQuery.toLowerCase();
@@ -79,16 +114,22 @@ export default function ResourcesPage() {
   const filteredSections = useMemo<ResourceSection[]>(() => {
     if (!queryActive) return SECTIONS;
     return SECTIONS.map((section) => {
-      const titleMatches = section.title.toLowerCase().includes(normalizedQuery);
+      const titleMatches = section.title
+        .toLowerCase()
+        .includes(normalizedQuery);
       const entries = titleMatches
         ? section.entries // Include all entries if title matches
         : section.entries.filter((entry) =>
-          [entry.name, ...entry.lines].some((text) => text.toLowerCase().includes(normalizedQuery))
-        );
+            [entry.name, ...entry.lines].some((text) =>
+              text.toLowerCase().includes(normalizedQuery)
+            )
+          );
       return { ...section, entries };
     }).filter((section) => {
       // Keep section if title matches OR if it has matching entries
-      const titleMatches = section.title.toLowerCase().includes(normalizedQuery);
+      const titleMatches = section.title
+        .toLowerCase()
+        .includes(normalizedQuery);
       return titleMatches || section.entries.length > 0;
     });
   }, [normalizedQuery, queryActive]);
@@ -140,10 +181,16 @@ export default function ResourcesPage() {
                     type="button"
                     variant="link"
                     onClick={() => setSelectedId(s.id)}
-                    aria-current={selectedId === s.id && !queryActive ? 'true' : undefined}
+                    aria-current={
+                      selectedId === s.id && !queryActive ? 'true' : undefined
+                    }
                     disabled={queryActive}
-                    className={`text-left text-md justify-start px-0 h-auto whitespace-normal hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${selectedId === s.id && !queryActive ? 'text-primary underline' : ''
-                      }`}>
+                    className={`text-left text-md justify-start px-0 h-auto whitespace-normal hover:underline underline-offset-4 disabled:cursor-not-allowed disabled:opacity-70 ${
+                      selectedId === s.id && !queryActive
+                        ? 'text-primary underline'
+                        : ''
+                    }`}
+                  >
                     {s.title}
                   </Button>
                 </li>
@@ -159,11 +206,20 @@ export default function ResourcesPage() {
                 </p>
               ) : (
                 filteredSections.map((section) => (
-                  <SectionDetails key={section.id} section={section} highlightQuery={highlightQuery} />
+                  <SectionDetails
+                    key={section.id}
+                    section={section}
+                    highlightQuery={highlightQuery}
+                  />
                 ))
               )
             ) : (
-              selectedSection && <SectionDetails section={selectedSection} highlightQuery={highlightQuery} />
+              selectedSection && (
+                <SectionDetails
+                  section={selectedSection}
+                  highlightQuery={highlightQuery}
+                />
+              )
             )}
           </section>
         </div>
@@ -172,7 +228,9 @@ export default function ResourcesPage() {
         <div className="md:hidden">
           {filteredSections.length === 0 && queryActive ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No resources found matching &quot;{trimmedQuery}&quot;</p>
+              <p className="text-muted-foreground">
+                No resources found matching &quot;{trimmedQuery}&quot;
+              </p>
             </div>
           ) : (
             <Accordion
@@ -185,11 +243,14 @@ export default function ResourcesPage() {
                 if (value) {
                   setSelectedId(value);
                 }
-              }}>
+              }}
+            >
               {filteredSections.map((section) => (
                 <AccordionItem key={section.id} value={section.id}>
                   <AccordionTrigger className="text-left">
-                    <span className="text-lg font-medium">{highlightText(section.title, highlightQuery)}</span>
+                    <span className="text-lg font-medium">
+                      {highlightText(section.title, highlightQuery)}
+                    </span>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-10 pt-2">
@@ -198,9 +259,15 @@ export default function ResourcesPage() {
                       ) : (
                         section.entries.map((e) => (
                           <div key={e.name} className="space-y-2">
-                            <h3 className="text-lg font-semibold">{highlightText(e.name, highlightQuery)}</h3>
+                            <h3 className="text-lg font-semibold">
+                              {highlightText(e.name, highlightQuery)}
+                            </h3>
                             {e.lines.map((line, i) => (
-                              <ResourceLine key={i} text={line} highlightQuery={highlightQuery} />
+                              <ResourceLine
+                                key={i}
+                                text={line}
+                                highlightQuery={highlightQuery}
+                              />
                             ))}
                           </div>
                         ))

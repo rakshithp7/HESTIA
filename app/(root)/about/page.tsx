@@ -1,6 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import type { FAQItem, FAQItemId } from '@/data/faq';
 import { FAQ_ITEMS } from '@/data/faq';
@@ -38,11 +43,14 @@ export default function AboutPage() {
       {/* Hero section */}
       <section className="bg-primary/70 text-primary-foreground px-6 py-10 md:px-12">
         <div className="max-w-8xl mx-auto">
-          <h2 className="text-3xl md:text-5xl mb-4 drop-shadow-sm">What is Hestia?</h2>
+          <h2 className="text-3xl md:text-5xl mb-4 drop-shadow-sm">
+            What is Hestia?
+          </h2>
           <p className="text-md md:text-lg leading-relaxed drop-shadow-sm">
-            Hestia is a completely free and anonymous chat service that allows you to talk to another community member
-            in your age group based on your choice of topic. Our aim is to provide a judgement-free space founded on
-            human connection, understanding, and unity.
+            Hestia is a completely free and anonymous chat service that allows
+            you to talk to another community member in your age group based on
+            your choice of topic. Our aim is to provide a judgement-free space
+            founded on human connection, understanding, and unity.
           </p>
         </div>
       </section>
@@ -62,8 +70,10 @@ export default function AboutPage() {
                       variant="link"
                       type="button"
                       onClick={() => setSelectedFaq(faq.id)}
-                      className={`text-left text-md justify-start px-0 h-auto underline-offset-4 hover:underline outline-none ${selectedFaq === faq.id ? 'text-primary underline' : ''
-                        }`}>
+                      className={`text-left text-md justify-start px-0 h-auto underline-offset-4 hover:underline outline-none ${
+                        selectedFaq === faq.id ? 'text-primary underline' : ''
+                      }`}
+                    >
                       {faq.heading}
                     </Button>
                   </li>
@@ -71,7 +81,9 @@ export default function AboutPage() {
               </ul>
             </div>
             <div className="md:col-span-2">
-              <div className="space-y-6">{activeFaq && <FaqContent faq={activeFaq} />}</div>
+              <div className="space-y-6">
+                {activeFaq && <FaqContent faq={activeFaq} />}
+              </div>
             </div>
           </div>
 

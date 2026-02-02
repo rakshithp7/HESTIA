@@ -12,14 +12,19 @@ type ResolvePayload = {
 
 const RESOLVABLE_STATUSES: ModerationReportStatus[] = ['resolved', 'dismissed'];
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
   }
 
   try {
-    const payload = (await request.json().catch(() => null)) as ResolvePayload | null;
+    const payload = (await request
+      .json()
+      .catch(() => null)) as ResolvePayload | null;
     if (!payload?.status || !RESOLVABLE_STATUSES.includes(payload.status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
@@ -44,7 +49,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     if (error) {
       console.error('[admin/report/resolve] Failed to update report', error);
-      return NextResponse.json({ error: 'Failed to update report' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update report' },
+        { status: 500 }
+      );
     }
 
     if (!data) {
@@ -54,6 +62,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ report: data });
   } catch (error) {
     console.error('[admin/report/resolve] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

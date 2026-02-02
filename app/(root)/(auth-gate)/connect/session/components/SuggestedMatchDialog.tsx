@@ -19,7 +19,7 @@ interface SuggestedMatchDialogProps {
 export function SuggestedMatchDialog({
   suggestedMatch,
   onAccept,
-  onReject
+  onReject,
 }: SuggestedMatchDialogProps) {
   const [isAccepting, setIsAccepting] = useState(false);
 
@@ -38,12 +38,18 @@ export function SuggestedMatchDialog({
         }
       }}
     >
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+      <DialogContent
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>No perfect match found</DialogTitle>
           <DialogDescription asChild className="space-y-2">
             <div className="text-sm text-muted-foreground">
-              <div>Hey we couldn&apos;t find you a great match... the closest topic we could find was &quot;<b>{suggestedMatch?.topic}</b>&quot;.</div>
+              <div>
+                Hey we couldn&apos;t find you a great match... the closest topic
+                we could find was &quot;<b>{suggestedMatch?.topic}</b>&quot;.
+              </div>
               {suggestedMatch?.peerConsentedToMe && (
                 <div className="flex items-center gap-2 text-green-600 font-medium bg-green-50 p-2 rounded-md">
                   <div className="relative flex h-2 w-2">
@@ -57,7 +63,11 @@ export function SuggestedMatchDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onReject?.()} disabled={isAccepting}>
+          <Button
+            variant="outline"
+            onClick={() => onReject?.()}
+            disabled={isAccepting}
+          >
             Cancel
           </Button>
           <Button
@@ -68,7 +78,11 @@ export function SuggestedMatchDialog({
             disabled={isAccepting}
           >
             {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {suggestedMatch?.peerConsentedToMe ? "Accept & Connect" : (isAccepting ? "Waiting for peer..." : "Connect")}
+            {suggestedMatch?.peerConsentedToMe
+              ? 'Accept & Connect'
+              : isAccepting
+                ? 'Waiting for peer...'
+                : 'Connect'}
           </Button>
         </DialogFooter>
       </DialogContent>

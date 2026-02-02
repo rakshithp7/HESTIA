@@ -21,11 +21,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     redirect('/connect');
   }
 
-  const { data: profile, error } = await getUserById<Pick<Profile, 'first_name' | 'last_name' | 'role'>>(
-    supabase,
-    user.id,
-    'first_name,last_name,role'
-  );
+  const { data: profile, error } = await getUserById<
+    Pick<Profile, 'first_name' | 'last_name' | 'role'>
+  >(supabase, user.id, 'first_name,last_name,role');
 
   if (error || !profile) {
     console.error('[admin] Failed to load profile', error);
@@ -37,9 +35,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const displayName =
-    [profile.first_name, profile.last_name].filter((part) => (part ?? '').trim().length > 0).join(' ') ||
+    [profile.first_name, profile.last_name]
+      .filter((part) => (part ?? '').trim().length > 0)
+      .join(' ') ||
     user.email ||
     'Admin';
 
-  return <AdminClient displayName={displayName} initialSection={resolvedSearchParams?.section} />;
+  return (
+    <AdminClient
+      displayName={displayName}
+      initialSection={resolvedSearchParams?.section}
+    />
+  );
 }

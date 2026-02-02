@@ -1,14 +1,14 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Switch } from "@/components/ui/switch"
-import { useAccessibility } from "@/components/providers/accessibility-provider"
-import { PersonStandingIcon } from "lucide-react"
+} from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { useAccessibility } from '@/components/providers/AccessibilityProvider';
+import { PersonStanding } from 'lucide-react';
 
 export function AccessibilityMenu() {
   const {
@@ -18,7 +18,7 @@ export function AccessibilityMenu() {
     setDyslexicFont,
     textScale,
     setTextScale,
-  } = useAccessibility()
+  } = useAccessibility();
 
   return (
     <DropdownMenu>
@@ -29,7 +29,7 @@ export function AccessibilityMenu() {
           aria-label="Accessibility Settings"
           className="data-[state=open]:bg-primary data-[state=open]:text-white dark:data-[state=open]:text-black"
         >
-          <PersonStandingIcon className="h-5 w-5" />
+          <PersonStanding className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[300px] p-4">
@@ -42,26 +42,22 @@ export function AccessibilityMenu() {
           {/* High Contrast */}
           <div className="flex items-center justify-between">
             <span className="text-base font-medium">High Contrast</span>
-            <Switch
-              checked={highContrast}
-              onCheckedChange={setHighContrast}
-            />
+            <Switch checked={highContrast} onCheckedChange={setHighContrast} />
           </div>
 
           {/* Dyslexic Font */}
           <div className="flex items-center justify-between">
             <span className="text-base font-medium">Dyslexic Font</span>
-            <Switch
-              checked={dyslexicFont}
-              onCheckedChange={setDyslexicFont}
-            />
+            <Switch checked={dyslexicFont} onCheckedChange={setDyslexicFont} />
           </div>
 
           {/* Text Scale */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-base font-medium">Text Scale</span>
-              <span className="text-sm text-muted-foreground">{Math.round(textScale * 100)}%</span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round(textScale * 100)}%
+              </span>
             </div>
             <div className="flex items-center gap-2 justify-between bg-muted/50 p-1 rounded-md">
               <Button
@@ -86,5 +82,5 @@ export function AccessibilityMenu() {
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

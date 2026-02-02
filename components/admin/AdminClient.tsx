@@ -2,13 +2,21 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { AdminReportsPanel } from '@/components/admin/AdminReportsPanel';
 
 type AdminNavItemId = 'reports';
 
-const ADMIN_NAV_ITEMS: { id: AdminNavItemId; label: string }[] = [{ id: 'reports', label: 'Reports' }];
+const ADMIN_NAV_ITEMS: { id: AdminNavItemId; label: string }[] = [
+  { id: 'reports', label: 'Reports' },
+];
 
 type AdminClientProps = {
   displayName: string;
@@ -16,12 +24,19 @@ type AdminClientProps = {
 };
 
 export function AdminClient({ displayName, initialSection }: AdminClientProps) {
-  const sanitizeSection = React.useCallback((section?: string): AdminNavItemId => {
-    const candidate = section as AdminNavItemId | undefined;
-    return candidate && ADMIN_NAV_ITEMS.some((item) => item.id === candidate) ? candidate : 'reports';
-  }, []);
+  const sanitizeSection = React.useCallback(
+    (section?: string): AdminNavItemId => {
+      const candidate = section as AdminNavItemId | undefined;
+      return candidate && ADMIN_NAV_ITEMS.some((item) => item.id === candidate)
+        ? candidate
+        : 'reports';
+    },
+    []
+  );
 
-  const [activeSection, setActiveSection] = React.useState<AdminNavItemId>(() => sanitizeSection(initialSection));
+  const [activeSection, setActiveSection] = React.useState<AdminNavItemId>(() =>
+    sanitizeSection(initialSection)
+  );
 
   React.useEffect(() => {
     setActiveSection(sanitizeSection(initialSection));
@@ -31,13 +46,22 @@ export function AdminClient({ displayName, initialSection }: AdminClientProps) {
     <div className="px-6 py-8 md:px-12">
       <div className="mx-auto max-w-5xl space-y-8 text-foreground">
         <header className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.15em] text-foreground/80">Admin Console</p>
-          <h1 className="text-3xl md:text-4xl font-semibold">Welcome back, {displayName}</h1>
-          <p className="text-foreground">Manage moderation workflows and safety actions for the community.</p>
+          <p className="text-sm uppercase tracking-[0.15em] text-foreground/80">
+            Admin Console
+          </p>
+          <h1 className="text-3xl md:text-4xl font-semibold">
+            Welcome back, {displayName}
+          </h1>
+          <p className="text-foreground">
+            Manage moderation workflows and safety actions for the community.
+          </p>
         </header>
 
         <div className="md:hidden">
-          <Select value={activeSection} onValueChange={(value) => setActiveSection(value as AdminNavItemId)}>
+          <Select
+            value={activeSection}
+            onValueChange={(value) => setActiveSection(value as AdminNavItemId)}
+          >
             <SelectTrigger className="w-full justify-between h-12! text-foreground">
               <SelectValue placeholder="Choose section" />
             </SelectTrigger>
@@ -68,7 +92,8 @@ export function AdminClient({ displayName, initialSection }: AdminClientProps) {
                           isActive
                             ? 'bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-border/60'
                             : 'text-foreground/70 hover:bg-muted/50 hover:text-foreground'
-                        )}>
+                        )}
+                      >
                         {item.label}
                       </Button>
                     </li>
@@ -79,7 +104,9 @@ export function AdminClient({ displayName, initialSection }: AdminClientProps) {
           </aside>
 
           <main className="flex-1 space-y-8">
-            {activeSection === 'reports' ? <AdminReportsPanel variant="embedded" /> : null}
+            {activeSection === 'reports' ? (
+              <AdminReportsPanel variant="embedded" />
+            ) : null}
           </main>
         </div>
       </div>

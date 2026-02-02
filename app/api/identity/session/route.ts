@@ -16,25 +16,35 @@ export async function POST() {
 
     if (userError) {
       console.error('[identity/session] Supabase user error', userError);
-      return NextResponse.json({ error: 'Failed to load session' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to load session' },
+        { status: 500 }
+      );
     }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const {
-      data: profile,
-      error: profileError,
-    } = await supabase.from('profiles').select('*').eq('id', user.id).single<Profile>();
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single<Profile>();
 
     if (profileError || !profile) {
       console.error('[identity/session] Failed to load profile', profileError);
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    if (profile.verification_status === 'verified' && profile.verification_required === false) {
-      return NextResponse.json({ error: 'Profile already verified' }, { status: 400 });
+    if (
+      profile.verification_status === 'verified' &&
+      profile.verification_required === false
+    ) {
+      return NextResponse.json(
+        { error: 'Profile already verified' },
+        { status: 400 }
+      );
     }
 
     const verificationSession = await createVerificationSession({
@@ -43,7 +53,8 @@ export async function POST() {
     });
 
     const lastReport = verificationSession.last_verification_report;
-    const lastReportId = typeof lastReport === 'string' ? lastReport : lastReport?.id ?? null;
+    const lastReportId =
+      typeof lastReport === 'string' ? lastReport : (lastReport?.id ?? null);
 
     const updatePayload = {
       verification_status: nextProfileStatusForSession(verificationSession),
@@ -63,7 +74,10 @@ export async function POST() {
 
     if (updateError) {
       console.error('[identity/session] Failed to update profile', updateError);
-      return NextResponse.json({ error: 'Failed to persist verification session' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to persist verification session' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -74,6 +88,9 @@ export async function POST() {
     });
   } catch (error) {
     console.error('[identity/session] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

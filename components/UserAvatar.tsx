@@ -17,7 +17,12 @@ type UserAvatarProps = {
   isAdmin?: boolean;
 };
 
-export default function UserAvatar({ initials, onSignOut, className, isAdmin }: UserAvatarProps) {
+export default function UserAvatar({
+  initials,
+  onSignOut,
+  className,
+  isAdmin,
+}: UserAvatarProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -27,20 +32,28 @@ export default function UserAvatar({ initials, onSignOut, className, isAdmin }: 
           className={cn(
             'size-10 rounded-full bg-foreground text-background font-bold flex items-center justify-center cursor-pointer',
             className
-          )}>
+          )}
+        >
           {initials}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
         <DropdownMenuItem asChild>
-          <Link href="/profile" className='text-base'> Profile</Link>
+          <Link href="/profile" className="text-base">
+            {' '}
+            Profile
+          </Link>
         </DropdownMenuItem>
         {isAdmin ? (
           <DropdownMenuItem asChild>
-            <Link href="/admin" className='text-base'>Admin</Link>
+            <Link href="/admin" className="text-base">
+              Admin
+            </Link>
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onClick={() => onSignOut()} className='text-base'>Sign out</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSignOut()} className="text-base">
+          Sign out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

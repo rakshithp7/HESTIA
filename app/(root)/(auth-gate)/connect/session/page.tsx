@@ -1,10 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2, Phone, MessageSquare, XSquare, AlertTriangle, ShieldAlert } from 'lucide-react';
+import {
+  Loader2,
+  Phone,
+  MessageSquare,
+  XSquare,
+  AlertTriangle,
+  ShieldAlert,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatSection } from '@/components/chat/ChatSection';
-import { useRTCSessionContext } from '@/lib/rtc-session-context';
+import { useRTCSessionContext } from '@/components/providers/RTCSessionProvider';
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ActiveUserBan } from '@/lib/supabase/types';
@@ -23,33 +30,41 @@ export default function ConnectSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const topic = searchParams.get('topic');
-  const rtcHook = useRTCSessionContext();
+  const { rtcSession, endSession } = useRTCSessionContext();
+
+  // If no active session, redirect to connect page
+  useEffect(() => {
+    if (!rtcSession) {
+      router.replace('/connect');
+    }
+  }, [rtcSession, router]);
+
+  // Safe destructuring with || to prevent errors when rtcSession is null during redirect
   const {
-    status,
-    mode,
-    roomId,
-    peerUserId,
-    muted,
-    setMuted,
-    setAudioElementRef,
-    micReady,
-    micPermissionChecked,
-    requestLocalAudio,
-    localStream,
-    remoteStream,
-    // Chat functionality
-    chatMessages,
-    isPeerTyping,
-    isChatReady,
-    sendChatMessage,
-    sendTypingStart,
-    sendTypingStop,
-    end,
-    markUserBlocked,
-    suggestedMatch,
-    rejectSuggestedMatch,
-    acceptSuggestedMatch,
-  } = rtcHook;
+    status = 'idle',
+    mode = 'chat',
+    roomId = '',
+    peerUserId = null,
+    muted = false,
+    setMuted = () => {},
+    setAudioElementRef = () => {},
+    micReady = false,
+    micPermissionChecked = false,
+    requestLocalAudio = async () => false,
+    localStream = null,
+    remoteStream = null,
+    chatMessages = [],
+    isPeerTyping = false,
+    isChatReady = false,
+    sendChatMessage = () => false,
+    sendTypingStart = () => {},
+    sendTypingStop = () => {},
+    end = () => {},
+    markUserBlocked = () => {},
+    suggestedMatch = null,
+    rejectSuggestedMatch = async () => {},
+    acceptSuggestedMatch = async () => {},
+  } = rtcSession || {};
 
   // Track global presence
   useGlobalPresence({
@@ -91,8 +106,11 @@ export default function ConnectSessionPage() {
   });
 
   const isChatMode = mode === 'chat';
-  const isMatching = status === 'idle' || status === 'waiting' || status === 'connecting';
-  const [mobilePanel, setMobilePanel] = useState<'voice' | 'chat'>(isChatMode ? 'chat' : 'voice');
+  const isMatching =
+    status === 'idle' || status === 'waiting' || status === 'connecting';
+  const [mobilePanel, setMobilePanel] = useState<'voice' | 'chat'>(
+    isChatMode ? 'chat' : 'voice'
+  );
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
@@ -100,14 +118,12 @@ export default function ConnectSessionPage() {
   }, [isChatMode]);
 
   const handleDisconnect = useCallback(() => {
-    if (typeof end === 'function') {
-      setIsDisconnecting(true);
-      end();
-      setTimeout(() => router.push('/connect'), 300);
-    } else {
-      router.push('/connect');
-    }
-  }, [end, router]);
+    setIsDisconnecting(true);
+    // Call global endSession which handles cleanup
+    endSession();
+    // Navigate back to connect page
+    router.push('/connect');
+  }, [endSession, router]);
 
   const handleRequestLocalAudio = useCallback(async () => {
     console.log('Requesting local audio from stable wrapper');
@@ -119,24 +135,44 @@ export default function ConnectSessionPage() {
     }
   }, [requestLocalAudio]);
 
-  if (profileLoading) {
-    return <VerificationLoadingState />;
-  }
+  // Skip verification if session is already established (user is returning to active session)
+  const shouldSkipVerification = status !== 'idle' && status !== 'ended';
 
-  if (profileError) {
-    return <VerificationErrorState message={profileError} onRetry={refetchProfile} />;
-  }
+  if (!shouldSkipVerification) {
+    // Only run verification checks for new sessions
 
-  if (profileNeedsVerification(profile)) {
-    return <VerificationBlockedState onGoToVerify={() => router.replace('/verify')} />;
-  }
+    if (profileLoading) {
+      return <VerificationLoadingState />;
+    }
 
-  if (banLoading) {
-    return <BanLoadingState />;
-  }
+    if (profileError) {
+      return (
+        <VerificationErrorState
+          message={profileError}
+          onRetry={refetchProfile}
+        />
+      );
+    }
 
-  if (banError) {
-    return <BanErrorState message={banError} onRetry={refetchBan} />;
+    if (profileNeedsVerification(profile)) {
+      return (
+        <VerificationBlockedState
+          onGoToVerify={() => router.replace('/verify')}
+        />
+      );
+    }
+
+    if (banLoading) {
+      return <BanLoadingState />;
+    }
+
+    if (banError) {
+      return <BanErrorState message={banError} onRetry={refetchBan} />;
+    }
+
+    if (activeBan) {
+      return <BannedState ban={activeBan} onRetry={refetchBan} />;
+    }
   }
 
   if (activeBan) {
@@ -147,7 +183,12 @@ export default function ConnectSessionPage() {
     return <DisconnectingState />;
   }
 
-  if (status === 'ended' || status === 'media-error' || status === 'permission-denied' || status === 'no-mic') {
+  if (
+    status === 'ended' ||
+    status === 'media-error' ||
+    status === 'permission-denied' ||
+    status === 'no-mic'
+  ) {
     return <SessionEndedState status={status} onExit={handleDisconnect} />;
   }
 
@@ -177,7 +218,12 @@ export default function ConnectSessionPage() {
         <div className="flex flex-1 flex-col gap-4">
           <div className="flex h-full flex-1 flex-col gap-4 md:flex-row">
             {!isChatMode && (
-              <div className={cn('h-full p-1 md:w-1/4', mobilePanel === 'voice' ? 'flex md:flex' : 'hidden md:flex')}>
+              <div
+                className={cn(
+                  'h-full md:w-1/4 md:flex',
+                  mobilePanel === 'voice' ? 'flex' : 'hidden'
+                )}
+              >
                 <VoiceSection
                   status={status}
                   muted={muted}
@@ -194,10 +240,11 @@ export default function ConnectSessionPage() {
 
             <div
               className={cn(
-                'flex min-h-0 h-full flex-1 flex-col rounded-xl border-muted-foreground/10 border-2',
+                'flex h-full flex-1 flex-col rounded-xl md:border-2 md:border-muted-foreground/10 md:flex',
                 isChatMode ? 'w-full' : 'md:w-3/4',
-                !isChatMode && mobilePanel === 'voice' ? 'hidden md:flex' : 'flex md:flex'
-              )}>
+                !isChatMode && mobilePanel === 'voice' ? 'hidden' : 'flex'
+              )}
+            >
               <ChatSection
                 messages={chatMessages}
                 isPeerTyping={isPeerTyping}
@@ -216,10 +263,18 @@ export default function ConnectSessionPage() {
             onDisconnect={handleDisconnect}
             onReport={handleReport}
           />
-          {!hasVoiceSection && <MobileChatOnlyActions onDisconnect={handleDisconnect} onReport={handleReport} />}
+          {!hasVoiceSection && (
+            <MobileChatOnlyActions
+              onDisconnect={handleDisconnect}
+              onReport={handleReport}
+            />
+          )}
         </div>
 
-        <DesktopActions onDisconnect={handleDisconnect} onReport={handleReport} />
+        <DesktopActions
+          onDisconnect={handleDisconnect}
+          onReport={handleReport}
+        />
       </div>
 
       <ReportDialog
@@ -241,13 +296,21 @@ function VerificationLoadingState() {
     <div className="flex h-full w-full items-center justify-center py-12">
       <div className="flex flex-col items-center gap-4 text-center">
         <Loader2 className="size-10 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Checking your verification status…</p>
+        <p className="text-sm text-muted-foreground">
+          Checking your verification status…
+        </p>
       </div>
     </div>
   );
 }
 
-function VerificationErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function VerificationErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="flex h-full w-full items-center justify-center px-6 py-12">
       <div className="mx-auto max-w-md space-y-4 text-center">
@@ -264,13 +327,21 @@ function BanLoadingState() {
     <div className="flex h-full w-full items-center justify-center py-12">
       <div className="flex flex-col items-center gap-4 text-center">
         <Loader2 className="size-10 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Checking your moderation status…</p>
+        <p className="text-sm text-muted-foreground">
+          Checking your moderation status…
+        </p>
       </div>
     </div>
   );
 }
 
-function BanErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+function BanErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="flex h-full w-full items-center justify-center px-6 py-12">
       <div className="mx-auto max-w-md space-y-4 text-center">
@@ -282,7 +353,13 @@ function BanErrorState({ message, onRetry }: { message: string; onRetry: () => v
   );
 }
 
-function BannedState({ ban, onRetry }: { ban: ActiveUserBan; onRetry: () => void }) {
+function BannedState({
+  ban,
+  onRetry,
+}: {
+  ban: ActiveUserBan;
+  onRetry: () => void;
+}) {
   const endDate = new Date(ban.ends_at);
   const remainingSeconds = getBanRemainingSeconds(ban);
   const remainingLabel =
@@ -296,8 +373,9 @@ function BannedState({ ban, onRetry }: { ban: ActiveUserBan; onRetry: () => void
         <ShieldAlert className="mx-auto size-14 text-destructive" />
         <h2 className="text-2xl font-semibold">Access temporarily suspended</h2>
         <p className="text-muted-foreground">
-          An administrator has paused your access {remainingSeconds !== null ? `for ${remainingLabel}` : remainingLabel}.
-          You won’t be able to start new sessions until the ban expires.
+          An administrator has paused your access{' '}
+          {remainingSeconds !== null ? `for ${remainingLabel}` : remainingLabel}
+          . You won’t be able to start new sessions until the ban expires.
         </p>
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
@@ -332,7 +410,11 @@ function formatDuration(totalSeconds: number): string {
   return `${days} day${days === 1 ? '' : 's'}`;
 }
 
-function VerificationBlockedState({ onGoToVerify }: { onGoToVerify: () => void }) {
+function VerificationBlockedState({
+  onGoToVerify,
+}: {
+  onGoToVerify: () => void;
+}) {
   return (
     <div className="flex h-full w-full items-center justify-center px-6 py-12">
       <div className="mx-auto max-w-md space-y-6 text-center">
@@ -340,8 +422,8 @@ function VerificationBlockedState({ onGoToVerify }: { onGoToVerify: () => void }
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold">Verification Required</h2>
           <p className="text-muted-foreground">
-            We need to confirm your identity before you can continue in Connect. This protects the community and keeps
-            conversations safe.
+            We need to confirm your identity before you can continue in Connect.
+            This protects the community and keeps conversations safe.
           </p>
         </div>
         <Button onClick={onGoToVerify}>Start verification</Button>
@@ -355,13 +437,21 @@ function DisconnectingState() {
     <div className="flex h-full w-full items-center justify-center py-12">
       <div className="flex flex-col items-center gap-4 text-center">
         <Loader2 className="size-10 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Wrapping up your session…</p>
+        <p className="text-sm text-muted-foreground">
+          Wrapping up your session…
+        </p>
       </div>
     </div>
   );
 }
 
-function MatchingState({ status, onCancel }: { status: string; onCancel: () => void }) {
+function MatchingState({
+  status,
+  onCancel,
+}: {
+  status: string;
+  onCancel: () => void;
+}) {
   const statusDescription = useMemo(() => {
     switch (status) {
       case 'waiting':
@@ -381,9 +471,17 @@ function MatchingState({ status, onCancel }: { status: string; onCancel: () => v
           <div className="absolute inset-6 rounded-full border-2 border-primary/60 animate-ping [animation-delay:150ms]" />
           <div className="relative flex h-full w-full items-center justify-center rounded-full bg-primary/10" />
         </div>
-        <div className="text-2xl font-semibold tracking-wide">Looking for a friend...</div>
+        <div className="text-2xl font-semibold tracking-wide">
+          Looking for a friend...
+        </div>
         <p className="text-base text-muted-foreground">{statusDescription}</p>
-        <Button type="button" variant="outline" size="sm" className="mt-4 gap-2" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-4 gap-2"
+          onClick={onCancel}
+        >
           <XSquare className="size-4" />
           <span>Cancel</span>
         </Button>
@@ -392,13 +490,35 @@ function MatchingState({ status, onCancel }: { status: string; onCancel: () => v
   );
 }
 
-function SessionEndedState({ status, onExit }: { status: string; onExit: () => void }) {
+function SessionEndedState({
+  status,
+  onExit,
+}: {
+  status: string;
+  onExit: () => void;
+}) {
   const info = useMemo(() => {
     switch (status) {
-      case 'media-error': return { title: 'Connection Failed', desc: 'We could not establish a media connection. This is likely a firewall or network issue.' };
-      case 'permission-denied': return { title: 'Microphone Denied', desc: 'Please allow microphone access to use this feature.' };
-      case 'no-mic': return { title: 'No Microphone', desc: 'We could not find a microphone on your device.' };
-      default: return { title: 'Session Ended', desc: 'The connection has been closed.' };
+      case 'media-error':
+        return {
+          title: 'Connection Failed',
+          desc: 'We could not establish a media connection. This is likely a firewall or network issue.',
+        };
+      case 'permission-denied':
+        return {
+          title: 'Microphone Denied',
+          desc: 'Please allow microphone access to use this feature.',
+        };
+      case 'no-mic':
+        return {
+          title: 'No Microphone',
+          desc: 'We could not find a microphone on your device.',
+        };
+      default:
+        return {
+          title: 'Session Ended',
+          desc: 'The connection has been closed.',
+        };
     }
   }, [status]);
 
@@ -448,17 +568,37 @@ function MobileSessionActions({
           size="sm"
           variant="outline"
           className="flex-1 gap-2"
-          onClick={() => setMobilePanel((prev) => (prev === 'voice' ? 'chat' : 'voice'))}
-          aria-pressed={mobilePanel === 'chat'}>
-          {mobilePanel === 'voice' ? <MessageSquare className="size-4" /> : <Phone className="size-4" />}
-          <span className="text-sm font-medium">{mobilePanel === 'voice' ? 'Show Chat' : 'Show Audio'}</span>
+          onClick={() =>
+            setMobilePanel((prev) => (prev === 'voice' ? 'chat' : 'voice'))
+          }
+          aria-pressed={mobilePanel === 'chat'}
+        >
+          {mobilePanel === 'voice' ? (
+            <MessageSquare className="size-4" />
+          ) : (
+            <Phone className="size-4" />
+          )}
+          <span className="text-sm font-medium">
+            {mobilePanel === 'voice' ? 'Show Chat' : 'Show Audio'}
+          </span>
         </Button>
-        <Button type="button" size="sm" variant="destructive" className="flex-1 gap-2" onClick={onDisconnect}>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          className="flex-1 gap-2"
+          onClick={onDisconnect}
+        >
           <XSquare className="size-4" />
           <span className="text-sm font-semibold">Disconnect</span>
         </Button>
       </div>
-      <Button type="button" variant="ghost" className="w-full gap-2 " onClick={onReport}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-full gap-2 "
+        onClick={onReport}
+      >
         <AlertTriangle className="size-4" />
         <span className="text-sm font-mediumaccent">Report an Issue</span>
       </Button>
@@ -469,11 +609,22 @@ function MobileSessionActions({
 function MobileChatOnlyActions({ onDisconnect, onReport }: ActionHandlers) {
   return (
     <div className="flex flex-col gap-3 md:hidden">
-      <Button type="button" size="sm" variant="destructive" className="w-full gap-2" onClick={onDisconnect}>
+      <Button
+        type="button"
+        size="sm"
+        variant="destructive"
+        className="w-full gap-2"
+        onClick={onDisconnect}
+      >
         <XSquare className="size-4" />
         <span className="text-sm font-semibold">Disconnect</span>
       </Button>
-      <Button type="button" variant="ghost" className="w-full gap-2" onClick={onReport}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-full gap-2"
+        onClick={onReport}
+      >
         <AlertTriangle className="size-4" />
         <span className="text-sm font-medium">Report an Issue</span>
       </Button>
@@ -489,17 +640,23 @@ function DesktopActions({ onDisconnect, onReport }: ActionHandlers) {
           variant="outline"
           aria-label="End Session"
           className="flex flex-col h-fit w-[120px] p-4 text-destructive border-destructive hover:bg-destructive/40 hover:text-white"
-          onClick={onDisconnect}>
+          onClick={onDisconnect}
+        >
           <XSquare className="size-6 text-destructive" />
-          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">End Session</span>
+          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">
+            End Session
+          </span>
         </Button>
         <Button
           variant="outline"
           aria-label="Report an Issue"
           className="flex flex-col h-fit w-[120px] p-4 hover:bg-primary hover:text-accent"
-          onClick={onReport}>
+          onClick={onReport}
+        >
           <AlertTriangle className="size-6" />
-          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">Report an Issue</span>
+          <span className="text-base opacity-80 text-center leading-tight whitespace-normal">
+            Report an Issue
+          </span>
         </Button>
       </div>
     </div>

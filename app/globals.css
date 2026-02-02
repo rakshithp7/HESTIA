@@ -144,20 +144,20 @@
   --foreground: #000000;
   --card-foreground: #000000;
   --popover-foreground: #000000;
-  
+
   /* Primary: Darker shade of Elm (#1c575e) -> #0f3034 */
-  --primary: #0f3034; 
+  --primary: #0f3034;
   --primary-foreground: #ffffff;
-  
+
   /* Secondary: Darker shade of Lilac (#a284a1) -> #5e465d */
   --secondary: #5e465d;
   --secondary-foreground: #000000;
-  
+
   --muted-foreground: #000000;
-  
+
   --accent: #0f3034; /* Use Primary Dark for accent */
   --accent-foreground: #ffffff;
-  
+
   --border: #000000;
   --input: #ffffff;
   --ring: #0f3034;
@@ -169,24 +169,24 @@
   --foreground: #ffffff;
   --card-foreground: #ffffff;
   --popover-foreground: #ffffff;
-  
+
   /* Primary: Lighter shade of Lilac (#c29ec1) -> #ead4ea */
   --primary: #ead4ea;
   --primary-foreground: #000000;
-  
+
   /* Secondary: Lighter shade of Kashmir Blue (#537692) -> #b3d1eb */
   --secondary: #b3d1eb;
   --secondary-foreground: #ffffff;
-  
+
   --muted-foreground: #ffffff;
-  
+
   --accent: #ead4ea; /* Use Primary Light for accent */
   --accent-foreground: #000000;
-  
+
   --border: #ffffff;
   --input: #000000;
   --ring: #ead4ea;
-} 
+}
 
 @layer base {
   * {
@@ -198,7 +198,10 @@
   }
 
   * {
-    transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out, border-color 0.1s ease-in-out;
+    transition:
+      background-color 0.1s ease-in-out,
+      color 0.1s ease-in-out,
+      border-color 0.1s ease-in-out;
   }
 
   body.font-dyslexic * {

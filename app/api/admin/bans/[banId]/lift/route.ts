@@ -4,7 +4,10 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 export const runtime = 'nodejs';
 
-export async function POST(_: Request, context: { params: Promise<{ banId: string }> }) {
+export async function POST(
+  _: Request,
+  context: { params: Promise<{ banId: string }> }
+) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
@@ -23,7 +26,10 @@ export async function POST(_: Request, context: { params: Promise<{ banId: strin
 
     if (fetchError) {
       console.error('[admin/ban/lift] Failed to load ban', fetchError);
-      return NextResponse.json({ error: 'Failed to load ban' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to load ban' },
+        { status: 500 }
+      );
     }
 
     if (!existing) {
@@ -31,7 +37,10 @@ export async function POST(_: Request, context: { params: Promise<{ banId: strin
     }
 
     if (existing.lifted_at) {
-      return NextResponse.json({ error: 'Ban already lifted' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'Ban already lifted' },
+        { status: 409 }
+      );
     }
 
     const { data: updated, error: updateError } = await service
@@ -47,12 +56,18 @@ export async function POST(_: Request, context: { params: Promise<{ banId: strin
 
     if (updateError) {
       console.error('[admin/ban/lift] Failed to lift ban', updateError);
-      return NextResponse.json({ error: 'Failed to lift ban' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to lift ban' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ban: updated });
   } catch (error) {
     console.error('[admin/ban/lift] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

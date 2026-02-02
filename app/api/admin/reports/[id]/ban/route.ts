@@ -13,20 +13,31 @@ type BanPayload = {
   notes?: string;
 };
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
   const guard = await requireAdminUser();
   if ('response' in guard) {
     return guard.response;
   }
 
   try {
-    const payload = (await request.json().catch(() => null)) as BanPayload | null;
+    const payload = (await request
+      .json()
+      .catch(() => null)) as BanPayload | null;
     if (!payload?.durationLabel) {
-      return NextResponse.json({ error: 'Missing duration label' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing duration label' },
+        { status: 400 }
+      );
     }
 
     if (payload.durationLabel === 'custom' && !payload.customEndsAt) {
-      return NextResponse.json({ error: 'Custom bans require an end time' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Custom bans require an end time' },
+        { status: 400 }
+      );
     }
 
     const { id } = await context.params;
@@ -40,7 +51,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     if (reportError) {
       console.error('[admin/report/ban] Failed to load report', reportError);
-      return NextResponse.json({ error: 'Failed to load report' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to load report' },
+        { status: 500 }
+      );
     }
 
     if (!report) {
@@ -54,12 +68,21 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       .maybeSingle();
 
     if (activeBanError && activeBanError.code !== 'PGRST116') {
-      console.error('[admin/report/ban] Failed to check active ban', activeBanError);
-      return NextResponse.json({ error: 'Failed to check active ban' }, { status: 500 });
+      console.error(
+        '[admin/report/ban] Failed to check active ban',
+        activeBanError
+      );
+      return NextResponse.json(
+        { error: 'Failed to check active ban' },
+        { status: 500 }
+      );
     }
 
     if (activeBan) {
-      return NextResponse.json({ error: 'User already has an active ban', ban: activeBan }, { status: 409 });
+      return NextResponse.json(
+        { error: 'User already has an active ban', ban: activeBan },
+        { status: 409 }
+      );
     }
 
     const { startsAt, endsAt } = resolveBanWindow(payload.durationLabel, {
@@ -88,12 +111,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     if (insertError) {
       console.error('[admin/report/ban] Failed to issue ban', insertError);
-      return NextResponse.json({ error: 'Failed to issue ban' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to issue ban' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ ban });
   } catch (error) {
     console.error('[admin/report/ban] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

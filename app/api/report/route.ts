@@ -23,7 +23,10 @@ export async function POST(req: Request) {
 
     if (userError) {
       console.error('[report] Supabase user error', userError);
-      return NextResponse.json({ error: 'Unable to verify session' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to verify session' },
+        { status: 500 }
+      );
     }
 
     if (!user) {
@@ -34,20 +37,33 @@ export async function POST(req: Request) {
 
     if (ban) {
       return NextResponse.json(
-        { error: 'User is banned', bannedUntil: ban.ends_at, reason: ban.reason, banId: ban.id },
+        {
+          error: 'User is banned',
+          bannedUntil: ban.ends_at,
+          reason: ban.reason,
+          banId: ban.id,
+        },
         { status: 403 }
       );
     }
 
-    const payload = (await req.json().catch(() => null)) as ReportPayload | null;
+    const payload = (await req
+      .json()
+      .catch(() => null)) as ReportPayload | null;
     if (!payload) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
     }
 
     const { roomId, reasons, notes = '', chatLog = [] } = payload;
 
     if (!roomId || !Array.isArray(reasons) || reasons.length === 0) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
     }
 
     const service = getSupabaseServiceClient();
@@ -60,14 +76,18 @@ export async function POST(req: Request) {
 
     if (matchError) {
       console.error('[report] Failed to load match', matchError);
-      return NextResponse.json({ error: 'Unable to locate session metadata' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to locate session metadata' },
+        { status: 500 }
+      );
     }
 
     if (!match || ![match.peer1_id, match.peer2_id].includes(user.id)) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    const reportedUserId = match.peer1_id === user.id ? match.peer2_id : match.peer1_id;
+    const reportedUserId =
+      match.peer1_id === user.id ? match.peer2_id : match.peer1_id;
 
     const [reporterUser, reportedUser] = await Promise.all([
       service.auth.admin.getUserById(user.id).catch((error) => {
@@ -98,7 +118,10 @@ export async function POST(req: Request) {
       chatLog,
     };
 
-    console.log('[report] moderation payload\n', JSON.stringify(reportEnvelope, null, 2));
+    console.log(
+      '[report] moderation payload\n',
+      JSON.stringify(reportEnvelope, null, 2)
+    );
 
     const { data: insertedReport, error: insertError } = await service
       .from('moderation_reports')
@@ -119,7 +142,10 @@ export async function POST(req: Request) {
 
     if (insertError) {
       console.error('[report] Failed to store moderation report', insertError);
-      return NextResponse.json({ error: 'Unable to store moderation report' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to store moderation report' },
+        { status: 500 }
+      );
     }
 
     const reportId = insertedReport?.id ?? null;
@@ -136,14 +162,23 @@ export async function POST(req: Request) {
       console.error('[report] Failed to block reported user', blockError);
     }
 
-    const { error: cleanupError } = await service.from('active_matches').delete().eq('room_id', roomId);
+    const { error: cleanupError } = await service
+      .from('active_matches')
+      .delete()
+      .eq('room_id', roomId);
     if (cleanupError) {
-      console.error('[report] Failed to cleanup match after report', cleanupError);
+      console.error(
+        '[report] Failed to cleanup match after report',
+        cleanupError
+      );
     }
 
     return NextResponse.json({ reportedUserId, reportId });
   } catch (error) {
     console.error('[report] Unexpected error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

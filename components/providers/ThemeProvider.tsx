@@ -24,7 +24,8 @@ function initTheme() {
   try {
     if (
       localStorage.theme === 'dark' ||
-      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      (!('theme' in localStorage) &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
     ) {
       document.documentElement.classList.add('dark');
     } else {
@@ -51,7 +52,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     if (theme === 'system') {
       localStorage.removeItem('theme');
-      root.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
+      root.classList.toggle(
+        'dark',
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      );
     } else {
       localStorage.theme = theme;
       root.classList.toggle('dark', theme === 'dark');
@@ -62,13 +66,18 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     setThemeState(newTheme);
   };
 
-  return <ThemeProviderContext.Provider value={{ theme, setTheme }}>{children}</ThemeProviderContext.Provider>;
+  return (
+    <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeProviderContext.Provider>
+  );
 }
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
 
-  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
+  if (context === undefined)
+    throw new Error('useTheme must be used within a ThemeProvider');
 
   return context;
 };

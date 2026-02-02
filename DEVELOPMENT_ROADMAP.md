@@ -3,7 +3,6 @@
 ### Documentation & Onboarding
 
 - 2025-10-12: Refreshed repository README for onboarding
-
   - Added branded logo header and concise project description
   - Documented core features, architecture highlights, and required environment variables
   - Standardised setup instructions around `pnpm` and noted Supabase/Netlify deployment considerations
@@ -11,7 +10,6 @@
 ### Error & Fallback Pages
 
 - 2025-10-10: Added whimsical 404 experience
-
   - Created cute firefly-inspired layout at `app/not-found.tsx` that keeps the brand palette and typography
   - Included primary and secondary calls-to-action guiding visitors back to the home page or resources
   - Updated hero treatment to render the provided dotLottie animation (`public/404-anim.lottie`) with the official React wrapper
@@ -19,7 +17,6 @@
 ### Identity Verification
 
 - 2025-09-18: Integrated Stripe Identity verification flow
-
   - Added secure environment handling for Stripe secrets and Supabase service role in `lib/env/server.ts`
   - Created Stripe Identity service helper at `lib/stripe/identity.ts` and Supabase service client at `lib/supabase/service.ts`
   - Implemented API endpoints for starting, retrying, and receiving Stripe Identity webhooks under `app/api/identity/*`
@@ -29,7 +26,6 @@
 
 - Persist Stripe-sourced date of birth to `profiles.date_of_birth` upon successful verification for future age gating
 - 2025-10-07: Hardened DOB persistence for Stripe Identity verifications
-
   - Required new `STRIPE_IDENTITY_RESTRICTED_KEY` env and restricted Stripe client for sensitive lookups
   - Webhook now re-fetches the session with `verified_outputs.dob` expansion to reliably store DOB in `profiles`
   - Verified UI surfaces “Age verified from ID” with derived age when DOB is stored
@@ -37,50 +33,48 @@
 ### WebRTC Voice Implementation
 
 - 2025-10-16: Stabilized RTC session teardown & diagnostics
-
   - Replaced the recursive `rtcWarn`/`rtcError` helpers with a shared logger so connection warnings stop crashing the hook
   - Persist the active room channel via ref so `end_session` broadcasts reuse the subscribed channel and reliably notify peers
   - Hardened cleanup paths to clear room channel refs whenever a room unsubscribes, preventing stale signaling handles between matches
 
 - 2025-10-13: Added in-session reporting modal
-
   - Wired shadcn dialog-based flow on Connect sessions so members can choose multiple report reasons
   - On submit the session ends, re-queues the user with a fresh match, and surfaces a safety confirmation toast
-- 2025-10-14: Enhanced reporting dialog with contextual notes
 
+- 2025-10-14: Enhanced reporting dialog with contextual notes
   - Added optional free-form comments textarea so members can provide safety details beyond the predefined reasons
   - Captured note state alongside selected reasons to prepare for downstream moderation integrations
-- 2025-10-15: Wired matchmaking telemetry with blocking & moderation hooks
 
+- 2025-10-15: Wired matchmaking telemetry with blocking & moderation hooks
   - Added Supabase tables for `active_matches` and `blocked_users`, plus API routes to register, cleanup, and list matches
   - Reporting endpoint now records chat transcripts, resolves participant emails, blocks the reported user, and logs the moderation payload for email previews
   - `useRTCSession` now uses authenticated user IDs for pairing, skips blocked peers, and syncs match state with the new APIs so moderators can trace every session
   - Hardened schema integrity by referencing `profiles`, re-enabling RLS on the new tables, and scoping `blocked_users` policies to the owning member
   - Profile page now includes a “Blocked users” panel so members can review and remove entries without leaving the app
-- 2025-10-17: Bootstrapped admin roles and moderation schema
 
+- 2025-10-17: Bootstrapped admin roles and moderation schema
   - Added Supabase migration for profile roles, moderation reports, user bans, and an `active_user_bans` helper view
   - Introduced shared TypeScript models plus helpers for admin role checks and ban calculations
-- 2025-10-18: Built moderator workflows and ban enforcement
 
+- 2025-10-18: Built moderator workflows and ban enforcement
   - Persisted `/api/report` submissions into `moderation_reports` and exposed `/api/me/ban` plus admin-only moderation APIs for listing, resolving, and banning
   - Created `/admin/reports` dashboard with ban issuance/lift controls, transcript viewer, and resolution actions
   - Added client-side ban messaging and matchmaking guards so banned members see the remaining duration before rejoining
   - Surfaced admin navigation via the profile drawer and a dedicated `/admin` console that mirrors the profile layout while keeping tools separate
-- 2025-10-19: Fixed ban lift route handler typing
 
+- 2025-10-19: Fixed ban lift route handler typing
   - Updated `app/api/admin/bans/[banId]/lift/route.ts` to await the async `params` context so Next.js type guards accept the POST handler signature
   - Keeps moderator ban lifts functional after upgrading to the latest Next.js type plugin
-- 2025-10-19: Fixed ban issue route handler typing
 
+- 2025-10-19: Fixed ban issue route handler typing
   - Updated `app/api/admin/reports/[id]/ban/route.ts` to await the async `params` context so issuing bans remains type-safe with the Next.js guard changes
   - Ensures admin-issued bans continue working after the framework upgrade tightened handler validation
-- 2025-10-19: Fixed report detail and resolve handler typing
 
+- 2025-10-19: Fixed report detail and resolve handler typing
   - Updated `app/api/admin/reports/[id]/route.ts` and `app/api/admin/reports/[id]/resolve/route.ts` to await the async params context expected by the latest Next.js route guard
   - Keeps report detail fetches and resolution actions functioning without type errors post-upgrade
-- 2025-09-02: Implemented simplified WebRTC voice chat
 
+- 2025-09-02: Implemented simplified WebRTC voice chat
   - Added WebRTC dependencies: `webrtc-adapter` and `detectrtc`
   - Created `useVoiceRTC` hook in `lib/webrtc/useVoiceRTC.ts`
   - Improved session UI with better status indicators
@@ -88,7 +82,6 @@
   - Implemented disconnect and switch to chat functionality
 
 - 2025-09-03: Fixed SSR compatibility issues
-
   - Modified Navbar component to use `dynamic` import with `{ ssr: false }` to prevent window access during SSR
   - Updated `useVoiceRTC` hook to safely handle localStorage and window access during server-side rendering
   - Added SSR-safe UUID generation with proper client/server detection
@@ -113,7 +106,6 @@
   - Only show "Enable Microphone" button when permission check is complete
   - Wrapped microphone request function in useCallback for better performance
 - 2025-09-04: Fixed WebRTC for Netlify deployment
-
   - Added netlify.toml with required headers for WebRTC and Supabase WebSockets
   - Enhanced ICE server configuration with multiple STUN servers for better NAT traversal
   - Added improved error handling and logging for WebRTC connections
@@ -131,7 +123,6 @@
 ### Auth Views
 
 - 2025-08-29: Implemented sign-in page UI at `app/(auth)/sign-in/page.tsx`.
-
   - Added accessible form fields for email and password
   - Included remember-me checkbox and forgot password link
   - Used shared `Button` and Tailwind theme tokens to match branding

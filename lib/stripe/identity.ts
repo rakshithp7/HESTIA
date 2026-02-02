@@ -2,7 +2,9 @@ import Stripe from 'stripe';
 import { serverEnv } from '@/lib/env/server';
 
 const stripeClient = new Stripe(serverEnv.STRIPE_SECRET_KEY);
-const restrictedStripeClient = new Stripe(serverEnv.STRIPE_IDENTITY_RESTRICTED_KEY);
+const restrictedStripeClient = new Stripe(
+  serverEnv.STRIPE_IDENTITY_RESTRICTED_KEY
+);
 
 export type CreateVerificationSessionParams = {
   profileId: string;
@@ -33,7 +35,10 @@ export async function createVerificationSession({
   return stripeClient.identity.verificationSessions.create(params);
 }
 
-export function constructIdentityWebhookEvent(payload: Buffer, signature: string): Stripe.Event {
+export function constructIdentityWebhookEvent(
+  payload: Buffer,
+  signature: string
+): Stripe.Event {
   return stripeClient.webhooks.constructEvent(
     payload,
     signature,
@@ -44,18 +49,25 @@ export function constructIdentityWebhookEvent(payload: Buffer, signature: string
 export async function retrieveVerificationSession(
   verificationSessionId: string
 ): Promise<Stripe.Identity.VerificationSession> {
-  return stripeClient.identity.verificationSessions.retrieve(verificationSessionId);
+  return stripeClient.identity.verificationSessions.retrieve(
+    verificationSessionId
+  );
 }
 
 export async function retrieveVerificationReport(
   verificationReportId: string
 ): Promise<Stripe.Identity.VerificationReport> {
-  return stripeClient.identity.verificationReports.retrieve(verificationReportId);
+  return stripeClient.identity.verificationReports.retrieve(
+    verificationReportId
+  );
 }
 
 export async function retrieveSensitiveVerificationSession(
   verificationSessionId: string,
   params: Stripe.Identity.VerificationSessionRetrieveParams
 ): Promise<Stripe.Identity.VerificationSession> {
-  return restrictedStripeClient.identity.verificationSessions.retrieve(verificationSessionId, params);
+  return restrictedStripeClient.identity.verificationSessions.retrieve(
+    verificationSessionId,
+    params
+  );
 }

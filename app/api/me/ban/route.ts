@@ -14,7 +14,10 @@ export async function GET() {
 
     if (error) {
       console.error('[me/ban] Supabase user error', error);
-      return NextResponse.json({ error: 'Unable to verify session' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Unable to verify session' },
+        { status: 500 }
+      );
     }
 
     if (!user) {
@@ -25,6 +28,9 @@ export async function GET() {
     return NextResponse.json({ ban });
   } catch (err) {
     console.error('[me/ban] Unexpected error', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

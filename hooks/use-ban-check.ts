@@ -18,7 +18,9 @@ export function useBanCheck(userId: string | null) {
           const payload = await response.json().catch(() => ({}));
           throw new Error(payload.error || 'Failed to check ban status');
         }
-        const payload = (await response.json()) as { ban: ActiveUserBan | null };
+        const payload = (await response.json()) as {
+          ban: ActiveUserBan | null;
+        };
         setActiveBan(payload.ban ?? null);
       } catch (err) {
         console.error('[useBanCheck] Failed to load ban status', err);
@@ -32,11 +34,11 @@ export function useBanCheck(userId: string | null) {
 
   useEffect(() => {
     if (!userId) {
-       // If no user yet, likely loading profile or not auth, so maybe keep loading or wait?
-       // Logic in original file: 
-       // React.useEffect(() => { if (!userId) return; void fetchActiveBan(); }, [fetchActiveBan, userId]);
-       // So we just return.
-       return;
+      // If no user yet, likely loading profile or not auth, so maybe keep loading or wait?
+      // Logic in original file:
+      // React.useEffect(() => { if (!userId) return; void fetchActiveBan(); }, [fetchActiveBan, userId]);
+      // So we just return.
+      return;
     }
     void fetchActiveBan();
   }, [fetchActiveBan, userId]);

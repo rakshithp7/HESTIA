@@ -17,7 +17,8 @@ function getAgeFromDob(dob: string | null): number | null {
   let age = today.getFullYear() - birthDate.getFullYear();
   const hasHadBirthdayThisYear =
     today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() >= birthDate.getDate());
   if (!hasHadBirthdayThisYear) {
     age -= 1;
   }
@@ -49,7 +50,9 @@ export function useVerificationStatus() {
 
       if (userError) {
         console.error('[verification] Failed to fetch user', userError);
-        setError('Unable to load your account details. Please refresh and try again.');
+        setError(
+          'Unable to load your account details. Please refresh and try again.'
+        );
         setLoading(false);
         setRefreshing(false);
         return;
@@ -71,7 +74,9 @@ export function useVerificationStatus() {
 
       if (profileError) {
         console.error('[verification] Failed to fetch profile', profileError);
-        setError('We could not load your profile right now. Please try again shortly.');
+        setError(
+          'We could not load your profile right now. Please try again shortly.'
+        );
       } else {
         setProfile(data);
       }
@@ -117,13 +122,19 @@ export function useVerificationStatus() {
       setError(null);
 
       try {
-        const response = await fetch(isRetry ? '/api/identity/retry' : '/api/identity/session', {
-          method: 'POST',
-        });
+        const response = await fetch(
+          isRetry ? '/api/identity/retry' : '/api/identity/session',
+          {
+            method: 'POST',
+          }
+        );
 
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
-          const message = typeof body?.error === 'string' ? body.error : 'Could not start verification session.';
+          const message =
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Could not start verification session.';
           setError(message);
           return;
         }
@@ -133,14 +144,18 @@ export function useVerificationStatus() {
         if (data.url) {
           window.open(data.url, '_blank', 'noopener,noreferrer');
         } else {
-          setError('Session created but verification URL was not provided. Please contact support.');
+          setError(
+            'Session created but verification URL was not provided. Please contact support.'
+          );
         }
 
         await fetchProfile({ silent: true });
         setPolling(true);
       } catch (err) {
         console.error('[verification] Failed to start verification', err);
-        setError('Something went wrong while starting verification. Please try again.');
+        setError(
+          'Something went wrong while starting verification. Please try again.'
+        );
       } finally {
         setActionLoading(false);
       }
@@ -151,7 +166,10 @@ export function useVerificationStatus() {
   const needsVerification = profileNeedsVerification(profile);
   const currentStatus = profile?.verification_status ?? 'unverified';
   const attemptCount = profile?.verification_attempts ?? 0;
-  const verifiedAge = useMemo(() => getAgeFromDob(profile?.date_of_birth ?? null), [profile?.date_of_birth]);
+  const verifiedAge = useMemo(
+    () => getAgeFromDob(profile?.date_of_birth ?? null),
+    [profile?.date_of_birth]
+  );
 
   return {
     profile,

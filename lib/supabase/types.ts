@@ -1,6 +1,11 @@
 import type { ChatMessage } from '@/lib/webrtc/useRTCSession';
 
-export type ProfileVerificationStatus = 'unverified' | 'pending' | 'requires_input' | 'verified' | 'failed';
+export type ProfileVerificationStatus =
+  | 'unverified'
+  | 'pending'
+  | 'requires_input'
+  | 'verified'
+  | 'failed';
 export type ProfileRole = 'member' | 'admin';
 export type ModerationReportStatus = 'pending' | 'resolved' | 'dismissed';
 export type BanDurationLabel = '1d' | '1w' | '1m' | '1y' | 'custom';

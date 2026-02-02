@@ -361,17 +361,11 @@ export const SECTIONS: ResourceSection[] = [
       },
       {
         name: 'Alcoholics Anonymous (AA)',
-        lines: [
-          '12-step support for alcohol addiction',
-          'https://www.aa.org/',
-        ],
+        lines: ['12-step support for alcohol addiction', 'https://www.aa.org/'],
       },
       {
         name: 'Narcotics Anonymous (NA)',
-        lines: [
-          '12-step support for drug addiction',
-          'https://www.na.org/',
-        ],
+        lines: ['12-step support for drug addiction', 'https://www.na.org/'],
       },
       {
         name: 'Al-Anon Family Groups',

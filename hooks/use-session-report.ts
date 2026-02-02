@@ -10,14 +10,24 @@ interface UseSessionReportProps {
   end?: () => void;
 }
 
-export function useSessionReport({ roomId, peerUserId, chatMessages, markUserBlocked, end }: UseSessionReportProps) {
+export function useSessionReport({
+  roomId,
+  peerUserId,
+  chatMessages,
+  markUserBlocked,
+  end,
+}: UseSessionReportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [reasons, setReasons] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleReason = useCallback((reason: string) => {
-    setReasons((prev) => (prev.includes(reason) ? prev.filter((item) => item !== reason) : [...prev, reason]));
+    setReasons((prev) =>
+      prev.includes(reason)
+        ? prev.filter((item) => item !== reason)
+        : [...prev, reason]
+    );
   }, []);
 
   const reset = useCallback(() => {
@@ -60,7 +70,9 @@ export function useSessionReport({ roomId, peerUserId, chatMessages, markUserBlo
         throw new Error(errorPayload.error || 'Failed to submit report');
       }
 
-      const { reportedUserId } = (await response.json().catch(() => ({}))) as { reportedUserId?: string };
+      const { reportedUserId } = (await response.json().catch(() => ({}))) as {
+        reportedUserId?: string;
+      };
       if (reportedUserId) {
         markUserBlocked?.(reportedUserId);
       } else {
@@ -79,7 +91,16 @@ export function useSessionReport({ roomId, peerUserId, chatMessages, markUserBlo
     } finally {
       setIsSubmitting(false);
     }
-  }, [reasons, roomId, peerUserId, notes, chatMessages, markUserBlocked, end, handleOpenChange]);
+  }, [
+    reasons,
+    roomId,
+    peerUserId,
+    notes,
+    chatMessages,
+    markUserBlocked,
+    end,
+    handleOpenChange,
+  ]);
 
   return {
     isOpen,

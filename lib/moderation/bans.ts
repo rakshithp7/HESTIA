@@ -1,4 +1,8 @@
-import type { ActiveUserBan, BanDurationLabel, UserBan } from '@/lib/supabase/types';
+import type {
+  ActiveUserBan,
+  BanDurationLabel,
+  UserBan,
+} from '@/lib/supabase/types';
 
 const MS_IN_SECOND = 1000;
 const MS_IN_MINUTE = MS_IN_SECOND * 60;
@@ -11,20 +15,30 @@ const BAN_DURATION_MAP: Record<Exclude<BanDurationLabel, 'custom'>, number> = {
   '1y': MS_IN_DAY * 365,
 };
 
-export function isBanActive(ban: UserBan | null | undefined, now = Date.now()): ban is ActiveUserBan {
+export function isBanActive(
+  ban: UserBan | null | undefined,
+  now = Date.now()
+): ban is ActiveUserBan {
   if (!ban || ban.lifted_at) return false;
   const start = new Date(ban.starts_at).getTime();
   const end = new Date(ban.ends_at).getTime();
-  return Number.isFinite(start) && Number.isFinite(end) && start <= now && now < end;
+  return (
+    Number.isFinite(start) && Number.isFinite(end) && start <= now && now < end
+  );
 }
 
-export function getBanRemainingMs(ban: UserBan | null | undefined, now = Date.now()): number | null {
+export function getBanRemainingMs(
+  ban: UserBan | null | undefined,
+  now = Date.now()
+): number | null {
   if (!isBanActive(ban, now)) return null;
   const end = new Date(ban.ends_at).getTime();
   return Math.max(end - now, 0);
 }
 
-export function getBanRemainingSeconds(ban: UserBan | null | undefined): number | null {
+export function getBanRemainingSeconds(
+  ban: UserBan | null | undefined
+): number | null {
   const ms = getBanRemainingMs(ban);
   if (ms === null) return null;
   return Math.ceil(ms / MS_IN_SECOND);
@@ -44,7 +58,10 @@ export function resolveBanWindow(
     if (Number.isNaN(customEnd.getTime()) || customEnd <= startsAtDate) {
       throw new Error('Invalid custom ban end time');
     }
-    return { startsAt: startsAtDate.toISOString(), endsAt: customEnd.toISOString() };
+    return {
+      startsAt: startsAtDate.toISOString(),
+      endsAt: customEnd.toISOString(),
+    };
   }
 
   const durationMs = BAN_DURATION_MAP[durationLabel];

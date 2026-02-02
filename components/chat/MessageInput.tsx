@@ -1,15 +1,23 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface MessageInputProps {
   onSendMessage: (text: string) => boolean;
   onTypingStart: () => void;
   onTypingStop: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disabled = false }: MessageInputProps) {
+export function MessageInput({
+  onSendMessage,
+  onTypingStart,
+  onTypingStop,
+  disabled = false,
+  compact = false,
+}: MessageInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [sendError, setSendError] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,20 +79,28 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disab
   );
 
   return (
-    <div className="flex-shrink-0 p-4">
+    <div className={cn(`flex-shrink-0`, compact ? '' : 'md:p-4 mb-2')}>
       {sendError && (
-        <div className="mb-2 text-sm text-destructive text-center">Failed to send message. Please try again.</div>
+        <div className="mb-2 text-sm text-destructive text-center">
+          Failed to send message. Please try again.
+        </div>
       )}
       <form onSubmit={handleSubmit}>
         <div
-          className={`flex items-center gap-2 rounded-full border px-5 py-3 ${
+          className={cn(
+            `flex items-center gap-2 border p-1`,
+            compact ? 'rounded-none' : 'rounded-full',
             sendError ? 'border-destructive bg-destructive/5' : 'bg-input'
-          }`}>
+          )}
+        >
           <Input
             value={inputValue}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={disabled ? 'Connecting...' : 'Your message here...'}
-            className="flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+            className={cn(
+              'flex-1 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0',
+              compact ? 'text-sm' : 'text-base'
+            )}
             disabled={disabled}
           />
           <Button
@@ -93,7 +109,8 @@ export function MessageInput({ onSendMessage, onTypingStart, onTypingStop, disab
             variant="ghost"
             size="icon"
             className="opacity-80 disabled:opacity-40"
-            aria-label="Send">
+            aria-label="Send"
+          >
             ➤
           </Button>
         </div>

@@ -11,18 +11,24 @@ interface AudioWaveformProps {
   color?: string;
   muted?: boolean;
   soundThreshold?: number; // Threshold for sound detection
+  compact?: boolean; // Compact mode for floating window
 }
 
 export default function AudioWaveform({
   audioStream,
   isActive,
   className,
-  barCount = 30,
+  barCount: initialBarCount = 30,
   color = 'currentColor',
   muted = false,
   soundThreshold = 15, // Default threshold value
+  compact = false,
 }: AudioWaveformProps) {
-  const [levels, setLevels] = useState<number[]>(Array(barCount).fill(0));
+  // Reduce bar count in compact mode for simpler visualization
+  const barCount = compact
+    ? Math.floor(initialBarCount * 0.6)
+    : initialBarCount;
+  const [levels, setLevels] = useState<number[]>(Array(barCount).fill(5));
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -58,7 +64,8 @@ export default function AudioWaveform({
       // Handle AudioContext with proper typing
       const AudioContextClass =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: new () => AudioContext }).webkitAudioContext;
+        (window as unknown as { webkitAudioContext?: new () => AudioContext })
+          .webkitAudioContext;
 
       if (!AudioContextClass) return;
 
@@ -99,7 +106,9 @@ export default function AudioWaveform({
 
       // Check if there's any sound using the configurable threshold
       // Calculate average sound level for better detection
-      const avgSoundLevel = Array.from(dataArray).reduce((sum, value) => sum + value, 0) / dataArray.length;
+      const avgSoundLevel =
+        Array.from(dataArray).reduce((sum, value) => sum + value, 0) /
+        dataArray.length;
       const hasSoundActivity = avgSoundLevel > soundThreshold;
 
       // Process frequency data into bar heights
@@ -159,7 +168,9 @@ export default function AudioWaveform({
             // Generate gentle sine wave pattern
             const phase = (i / barCount) * Math.PI * 2;
             const time = frame * 0.05;
-            const value = Math.sin(phase + time) * 10 + Math.sin(phase * 2.5 + time * 0.7) * 5;
+            const value =
+              Math.sin(phase + time) * 10 +
+              Math.sin(phase * 2.5 + time * 0.7) * 5;
             return Math.max(5, Math.min(30, value + 15)); // Keep between 5-30%
           });
 
@@ -179,7 +190,13 @@ export default function AudioWaveform({
   }, [isActive, audioStream, barCount, muted]);
 
   return (
-    <div className={cn('flex items-end justify-center gap-[2px] h-20 w-full', className)}>
+    <div
+      className={cn(
+        'flex items-end justify-center gap-[2px] w-full',
+        compact ? 'h-6' : 'h-20',
+        className
+      )}
+    >
       {levels.map((height, i) => (
         <div
           key={i}

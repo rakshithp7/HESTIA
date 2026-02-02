@@ -19,13 +19,19 @@ export async function getVerifiedUser<T extends SupabaseClient>(
     const { error } = result;
 
     if (error && !isAuthSessionMissingError(error)) {
-      console.error(`[auth:${context}] Failed to fetch authenticated user`, error);
+      console.error(
+        `[auth:${context}] Failed to fetch authenticated user`,
+        error
+      );
     }
 
     return user ?? null;
   } catch (error) {
     if (!isAuthSessionMissingError(error)) {
-      console.error(`[auth:${context}] Unexpected error while fetching authenticated user`, error);
+      console.error(
+        `[auth:${context}] Unexpected error while fetching authenticated user`,
+        error
+      );
     }
     return null;
   }

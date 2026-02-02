@@ -21,12 +21,18 @@ export default function HomePage() {
           <h1 className="text-[6rem] md:text-[12rem] tracking-wider m-0 leading-none font-difont preserve-font -mb-8 md:-mb-16 -mt-4 md:mt-12">
             HESTIA
           </h1>
-          <p className="text-xl md:text-3xl my-4 md:my-8">Creating a safe space for all, founded on connection.</p>
+          <p className="text-xl md:text-3xl my-4 md:my-8">
+            Creating a safe space for all, founded on connection.
+          </p>
           <div className="flex justify-center gap-4 md:gap-8">
             <Button asChild className="text-base font-bold md:text-lg">
               <Link href="/connect">Connect to chat</Link>
             </Button>
-            <Button asChild variant="outline" className="text-base font-bold md:text-lg">
+            <Button
+              asChild
+              variant="outline"
+              className="text-base font-bold md:text-lg"
+            >
               <Link href="/resources">View resources</Link>
             </Button>
           </div>

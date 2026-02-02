@@ -24,11 +24,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   let profile: Pick<Profile, 'first_name' | 'last_name'> | null = null;
 
-  const { data, error } = await getUserById<Pick<Profile, 'first_name' | 'last_name'>>(
-    supabase,
-    user.id,
-    'first_name,last_name'
-  );
+  const { data, error } = await getUserById<
+    Pick<Profile, 'first_name' | 'last_name'>
+  >(supabase, user.id, 'first_name,last_name');
 
   if (!error && data) {
     profile = data;
@@ -41,7 +39,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       email={user.email ?? ''}
       firstName={profile?.first_name ?? null}
       lastName={profile?.last_name ?? null}
-      initialSection={(resolvedSearchParams?.section as string | undefined) ?? undefined}
+      initialSection={
+        (resolvedSearchParams?.section as string | undefined) ?? undefined
+      }
     />
   );
 }
