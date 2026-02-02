@@ -234,14 +234,41 @@
 
   body.font-dyslexic * {
     font-family: var(--font-dyslexic) !important;
-    font-size-adjust: 0.4;
   }
 
   body.font-dyslexic .font-difont.preserve-font {
     font-family: var(--font-difont) !important;
-    font-size-adjust: none;
   }
 }
+
+
+@layer utilities {
+  body.font-dyslexic .text-xs { font-size: 0.66rem !important; }
+  body.font-dyslexic .text-sm { font-size: 0.86rem !important; }
+  body.font-dyslexic .text-base { font-size: 0.99rem !important; }
+  body.font-dyslexic .text-md { font-size: 1.06rem !important; }
+  body.font-dyslexic .text-lg { font-size: 1.12rem !important; }
+  body.font-dyslexic .text-xl { font-size: 1.25rem !important; }
+  body.font-dyslexic .text-2xl { font-size: 1.45rem !important; }
+  body.font-dyslexic .text-3xl { font-size: 1.85rem !important; }
+  body.font-dyslexic .text-4xl { font-size: 2.24rem !important; }
+  body.font-dyslexic .text-\[6rem\] { font-size: 4.62rem !important; }
+
+  @media (min-width: 900px) {
+    body.font-dyslexic .md\:text-sm { font-size: 0.86rem !important; }
+    body.font-dyslexic .md\:text-base { font-size: 0.99rem !important; }
+    body.font-dyslexic .md\:text-lg { font-size: 1.25rem !important; }
+    body.font-dyslexic .md\:text-xl { font-size: 1.45rem !important; }
+    body.font-dyslexic .md\:text-2xl { font-size: 1.72rem !important; }
+    body.font-dyslexic .md\:text-3xl { font-size: 2.24rem !important; }
+  }
+
+  @media (min-width: 1024px) {
+    body.font-dyslexic .lg\:text-xl { font-size: 1.3rem !important; }
+    body.font-dyslexic .lg\:text-2xl { font-size: 1.6rem !important; }
+  }
+}
+
 
 @layer utilities {
   .screen-height {
