@@ -39,19 +39,14 @@ export default function UserAvatar({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="text-base">
-            {' '}
-            Profile
-          </Link>
+          <Link href="/profile"> Profile</Link>
         </DropdownMenuItem>
         {isAdmin ? (
           <DropdownMenuItem asChild>
-            <Link href="/admin" className="text-base">
-              Admin
-            </Link>
+            <Link href="/admin">Admin</Link>
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onClick={() => onSignOut()} className="text-base">
+        <DropdownMenuItem onClick={() => onSignOut()}>
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

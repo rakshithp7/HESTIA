@@ -32,7 +32,7 @@ const Navbar = () => {
         ? pathname === '/'
         : pathname?.startsWith(href) || pathname === href;
     return cn(
-      'text-2xl tracking-widest font-difont hover:underline underline-offset-4 mt-2',
+      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 mt-2',
       isActive && 'underline'
     );
   };
