@@ -3,6 +3,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import type { ChatMessage } from '@/lib/webrtc/useRTCSession';
 import { fetchActiveBan } from '@/lib/moderation/server-bans';
+import { sendEmail } from '@/lib/email/client';
+import { emailEnv } from '@/lib/email/env';
+import { moderationAlert } from '@/lib/email/templates';
 
 export const runtime = 'nodejs';
 
@@ -106,23 +109,6 @@ export async function POST(req: Request) {
     const trimmedNotes = notes.trim();
     const sanitizedNotes = trimmedNotes || null;
 
-    const reportEnvelope = {
-      roomId,
-      topic: match.topic,
-      mode: match.mode,
-      createdAt: match.created_at,
-      reporter: { id: user.id, email: reporterEmail },
-      reported: { id: reportedUserId, email: reportedEmail },
-      reasons,
-      notes: sanitizedNotes,
-      chatLog,
-    };
-
-    console.log(
-      '[report] moderation payload\n',
-      JSON.stringify(reportEnvelope, null, 2)
-    );
-
     const { data: insertedReport, error: insertError } = await service
       .from('moderation_reports')
       .insert({
@@ -149,6 +135,36 @@ export async function POST(req: Request) {
     }
 
     const reportId = insertedReport?.id ?? null;
+
+    // The report is already persisted, so notification is best effort: a mail
+    // outage must not fail the request and lose the user's report.
+    if (emailEnv.MODERATION_ALERT_TO) {
+      const alert = moderationAlert({
+        reportId,
+        roomId,
+        topic: match.topic,
+        mode: match.mode,
+        reasons,
+        notes: sanitizedNotes,
+        reporterId: user.id,
+        reportedId: reportedUserId,
+      });
+
+      await sendEmail(
+        {
+          to: emailEnv.MODERATION_ALERT_TO,
+          subject: alert.subject,
+          html: alert.html,
+          text: alert.text,
+        },
+        'moderation-alert'
+      );
+    } else {
+      console.warn(
+        '[report] MODERATION_ALERT_TO not configured; no alert sent for report',
+        reportId
+      );
+    }
 
     const { error: blockError } = await service.from('blocked_users').upsert(
       {

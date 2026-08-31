@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,47 @@ import { useAccessibility } from '@/components/providers/AccessibilityProvider';
 export default function ContactPage() {
   const { dyslexicFont } = useAccessibility();
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting) return;
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.get('name'),
+          email: data.get('email'),
+          message: data.get('message'),
+        }),
+      });
+
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+
+      if (!res.ok) {
+        toast.error(
+          body?.error ?? 'We could not send your message. Please try again.'
+        );
+        return;
+      }
+
+      form.reset();
+      toast.success('Message sent. We sent a copy to your email.');
+    } catch {
+      toast.error(
+        'We could not reach the server. Check your connection and try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -47,12 +87,13 @@ export default function ContactPage() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-base">
-                Email
+                Email<span aria-hidden="true">*</span>
               </Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
+                required
                 placeholder="Enter your email"
                 className="px-4 py-2 text-base"
               />
@@ -72,8 +113,8 @@ export default function ContactPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full h-10">
-              Submit
+            <Button type="submit" disabled={submitting} className="w-full h-10">
+              {submitting ? 'Sending…' : 'Submit'}
             </Button>
 
             <div className="flex relative place-content-center">
