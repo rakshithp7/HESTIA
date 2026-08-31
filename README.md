@@ -81,7 +81,31 @@ STRIPE_IDENTITY_RETURN_URL=https://your-domain.com/verify
 STRIPE_IDENTITY_FLOW_ID=flow_xxx
 STRIPE_WEBHOOK_SECRET_IDENTITY=whsec_xxx
 SUPABASE_SERVICE_ROLE_KEY=service_role_key
+
+# WebRTC TURN relay (required for calls behind restrictive NATs)
+METERED_API_KEY=your-metered-api-key
+METERED_DOMAIN=your-subdomain.metered.live
+
+# Transactional email (optional; unset disables sending and logs instead)
+RESEND_API_KEY=re_xxxxxxxx
+EMAIL_FROM="Hestia <noreply@your-domain.com>"
+MODERATION_ALERT_TO=safety@your-domain.com
+CONTACT_INBOX_TO=hello@your-domain.com
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
+
+### Email
+
+Outbound mail goes through [Resend](https://resend.com); verify your sending
+domain there and add the DNS records it generates. Inbound mail is separate —
+route `hello@` and `safety@` to a real inbox (Cloudflare Email Routing works if
+your DNS is on Cloudflare).
+
+Sending is optional by design. Without `RESEND_API_KEY` the app still boots:
+`lib/email/client.ts` logs what it would have sent and returns a failure result
+rather than throwing. Moderation alerts degrade quietly because the report is
+already persisted, but `/api/contact` returns 503 instead of falsely telling
+someone their message was delivered.
 
 > Keep server-side secrets (`STRIPE_*`, `SUPABASE_SERVICE_ROLE_KEY`) out of the client bundle and configure them in your hosting provider.
 
