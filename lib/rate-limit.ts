@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 type Window = { count: number; resetAt: number };
 
 const buckets = new Map<string, Window>();
@@ -58,6 +59,32 @@ export function rateLimit(
     remaining: limit - existing.count,
     retryAfterSeconds,
   };
+}
+
+/**
+ * Route-handler wrapper: returns a ready 429 when the caller is over budget,
+ * or null when the request may proceed.
+ *
+ * Keeps the check-and-respond boilerplate in one place so every limited route
+ * returns the same body and `Retry-After` header.
+ */
+export function rateLimitResponse(
+  key: string,
+  limit: number,
+  windowMs: number,
+  message = 'Too many requests. Please try again later.'
+): NextResponse | null {
+  const result = rateLimit(key, limit, windowMs);
+
+  if (result.allowed) return null;
+
+  return NextResponse.json(
+    { error: message },
+    {
+      status: 429,
+      headers: { 'Retry-After': String(result.retryAfterSeconds) },
+    }
+  );
 }
 
 /** Best-effort client IP behind Netlify/Cloudflare proxies. */

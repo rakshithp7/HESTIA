@@ -1,30 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth/require-user';
 import { fetchActiveBan } from '@/lib/moderation/server-bans';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+    const guard = await requireUser('me/ban');
+    if ('response' in guard) return guard.response;
 
-    if (error) {
-      console.error('[me/ban] Supabase user error', error);
-      return NextResponse.json(
-        { error: 'Unable to verify session' },
-        { status: 500 }
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const ban = await fetchActiveBan(user.id);
+    const ban = await fetchActiveBan(guard.user.id);
     return NextResponse.json({ ban });
   } catch (err) {
     console.error('[me/ban] Unexpected error', err);

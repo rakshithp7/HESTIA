@@ -1,29 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth/require-user';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error('[blocked] Supabase user error', userError);
-      return NextResponse.json(
-        { error: 'Unable to verify session' },
-        { status: 500 }
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const guard = await requireUser('blocked');
+    if ('response' in guard) return guard.response;
+    const { user } = guard;
     const service = getSupabaseServiceClient();
     const [
       { data: blockedData, error: blockedError },
@@ -99,24 +84,9 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error('[blocked] Supabase user error', userError);
-      return NextResponse.json(
-        { error: 'Unable to verify session' },
-        { status: 500 }
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const guard = await requireUser('blocked');
+    if ('response' in guard) return guard.response;
+    const { user } = guard;
     const payload = (await req.json().catch(() => null)) as {
       blockedUserId?: string;
     } | null;

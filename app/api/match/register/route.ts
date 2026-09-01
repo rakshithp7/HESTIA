@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth/require-user';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { fetchActiveBan } from '@/lib/moderation/server-bans';
 
@@ -9,24 +9,9 @@ const VALID_MODES = new Set(['voice', 'chat']);
 
 export async function POST(req: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error('[match/register] Supabase user error', userError);
-      return NextResponse.json(
-        { error: 'Unable to verify session' },
-        { status: 500 }
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const guard = await requireUser('match/register');
+    if ('response' in guard) return guard.response;
+    const { user } = guard;
     const [ban] = await Promise.all([fetchActiveBan(user.id)]);
 
     if (ban) {

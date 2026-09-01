@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth/require-user';
 import { createVerificationSession } from '@/lib/stripe/identity';
 import type { Profile } from '@/lib/supabase/types';
 import { nextProfileStatusForSession } from '@/lib/verification';
@@ -8,24 +8,9 @@ export const runtime = 'nodejs';
 
 export async function POST() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error('[identity/session] Supabase user error', userError);
-      return NextResponse.json(
-        { error: 'Failed to load session' },
-        { status: 500 }
-      );
-    }
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const guard = await requireUser('identity/session');
+    if ('response' in guard) return guard.response;
+    const { supabase, user } = guard;
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
