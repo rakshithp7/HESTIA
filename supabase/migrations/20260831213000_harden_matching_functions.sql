@@ -26,7 +26,7 @@ returns uuid[]
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select coalesce(array_agg(distinct excluded_id), '{}')
   from (
@@ -51,7 +51,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select exists (
     select 1
@@ -92,7 +92,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_caller uuid := auth.uid();
@@ -226,7 +226,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_caller uuid := auth.uid();
