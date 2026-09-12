@@ -21,8 +21,6 @@ const MATCH_THRESHOLD_EPSILON = 0.001;
 type UseMatchQueueProps = {
   currentUserId: string | null;
   config: RTCSessionConfig;
-  blockedUserIds: string[];
-  blockedByUserIds: string[];
 };
 
 type UseMatchQueueResult = {
@@ -45,8 +43,6 @@ type UseMatchQueueResult = {
 export function useMatchQueue({
   currentUserId,
   config,
-  blockedUserIds,
-  blockedByUserIds,
 }: UseMatchQueueProps): UseMatchQueueResult {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
@@ -257,10 +253,6 @@ export function useMatchQueue({
 
       isPollingRef.current = true;
       try {
-        const excludedIds = Array.from(
-          new Set([...blockedUserIds, ...blockedByUserIds])
-        );
-
         const elapsedSec =
           (Date.now() - (startTimeRef.current || Date.now())) / 1000;
         const decay = elapsedSec * MATCH_THRESHOLD_DECAY_RATE;
@@ -269,11 +261,10 @@ export function useMatchQueue({
           MATCH_THRESHOLD_START - decay
         );
 
+        // Identity, search vector, mode and blocks are all derived server-side
+        // from auth.uid() and the caller's own queue row. The threshold is the
+        // only input the client still supplies, and the RPC clamps it.
         const { data, error } = await supabase.rpc('find_match', {
-          p_user_id: currentUserId,
-          p_topic_embedding: myEmbeddingRef.current,
-          p_mode: config.mode,
-          p_excluded_user_ids: excludedIds,
           p_threshold: currentThreshold,
         });
 
@@ -337,15 +328,7 @@ export function useMatchQueue({
     }, POLLING_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [
-    status,
-    currentUserId,
-    activeQueueId,
-    config.mode,
-    blockedUserIds,
-    blockedByUserIds,
-    supabase,
-  ]);
+  }, [status, currentUserId, activeQueueId, supabase]);
 
   // Heartbeat
   useEffect(() => {

@@ -44,3 +44,8 @@ next-env.d.ts
 /.cursor/
 # Local Netlify folder
 .netlify
+
+# local agent tooling
+/.claude/
+/.headroom/
+/.remember/

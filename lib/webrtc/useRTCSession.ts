@@ -33,8 +33,6 @@ export function useRTCSession({ topic, mode }: RTCSessionConfig) {
   const queue = useMatchQueue({
     currentUserId,
     config: { topic, mode },
-    blockedUserIds,
-    blockedByUserIds,
   });
 
   // -- Local Session State --
