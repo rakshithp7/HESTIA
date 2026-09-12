@@ -17,7 +17,6 @@ const MATCH_THRESHOLD_START = 0.8;
 const MATCH_THRESHOLD_MIN = 0.65;
 const MATCH_THRESHOLD_DECAY_RATE = 0.01;
 const MATCH_THRESHOLD_EPSILON = 0.001;
-const SUGGESTED_MATCH_MIN_SIMILARITY = 0.1;
 
 type UseMatchQueueProps = {
   currentUserId: string | null;
@@ -295,38 +294,39 @@ export function useMatchQueue({
 
         // Suggestion Fallback
         if (currentThreshold <= MATCH_THRESHOLD_MIN + MATCH_THRESHOLD_EPSILON) {
-          const { data: suggestions } = await supabase.rpc('debug_matches', {
-            p_user_id: currentUserId,
-            p_topic_embedding: myEmbeddingRef.current,
-            p_mode: config.mode,
-            p_my_queue_id: activeQueueId,
+          // The suggestion is built server-side: the browser is not allowed to
+          // read other members' queue rows, and the minimum similarity is
+          // enforced by /api/match/suggest.
+          const response = await fetch('/api/match/suggest', {
+            method: 'POST',
           });
 
-          if (suggestions && suggestions.length > 0) {
-            const best = suggestions[0];
-            if (best.similarity > SUGGESTED_MATCH_MIN_SIMILARITY) {
-              setSuggestedMatch((prev) => {
-                const isSamePeer = prev?.queueId === best.queue_id;
-                const effectiveConsent = isSamePeer
-                  ? prev?.peerConsentedToMe || best.peer_consented_to_me
-                  : best.peer_consented_to_me;
+          if (!response.ok) {
+            console.error('[RTC] Suggestion request failed', response.status);
+            return;
+          }
 
-                if (
-                  isSamePeer &&
-                  prev?.peerConsentedToMe === effectiveConsent &&
-                  prev?.topic === best.topic &&
-                  prev?.similarity === best.similarity
-                )
-                  return prev;
+          const { suggestion } = (await response.json()) as {
+            suggestion: SuggestedMatch | null;
+          };
 
-                return {
-                  queueId: best.queue_id,
-                  topic: best.topic,
-                  similarity: best.similarity,
-                  peerConsentedToMe: effectiveConsent,
-                };
-              });
-            }
+          if (suggestion) {
+            setSuggestedMatch((prev) => {
+              const isSamePeer = prev?.queueId === suggestion.queueId;
+              const effectiveConsent = isSamePeer
+                ? prev?.peerConsentedToMe || suggestion.peerConsentedToMe
+                : suggestion.peerConsentedToMe;
+
+              if (
+                isSamePeer &&
+                prev?.peerConsentedToMe === effectiveConsent &&
+                prev?.topic === suggestion.topic &&
+                prev?.similarity === suggestion.similarity
+              )
+                return prev;
+
+              return { ...suggestion, peerConsentedToMe: effectiveConsent };
+            });
           }
         }
       } catch (err) {
