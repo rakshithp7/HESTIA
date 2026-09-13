@@ -386,3 +386,17 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Tailwind v4 dropped `cursor: pointer` from its button preflight, so every
+   button in the app renders with the default arrow. That reads as "not
+   clickable", and it makes the cursor change as you move between a link and a
+   button sitting next to it - which is what it does across the navbar's icon
+   cluster.
+--------------------------------------------------------------------------- */
+
+button:not(:disabled),
+[role='button']:not(:disabled),
+summary {
+  cursor: pointer;
+}

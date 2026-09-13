@@ -35,7 +35,7 @@ const Navbar = () => {
     // flipped the cursor pointer/arrow/pointer at every one. Padding does not
     // widen the underline, which only spans the text.
     return cn(
-      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 mt-2 px-5 py-2',
+      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 px-5 py-5',
       isActive && 'underline'
     );
   };
