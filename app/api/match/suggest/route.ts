@@ -5,9 +5,11 @@ import { fetchMeetsMinimumAge } from '@/lib/verification/server-age';
 
 export const runtime = 'nodejs';
 
-// Below this the topics have nothing to do with each other and offering the
-// match would read as noise. Kept server-side so a client cannot widen it.
-const SUGGESTED_MATCH_MIN_SIMILARITY = 0.1;
+// Deliberately below the 0.83 auto-match floor: anything in between is offered
+// as a suggestion the member can accept or decline, rather than dropped. Below
+// this the topics really are unrelated and offering them reads as noise. Kept
+// server-side so a client cannot widen it.
+const SUGGESTED_MATCH_MIN_SIMILARITY = 0.7;
 
 type SuggestionRow = {
   queue_id: string;
