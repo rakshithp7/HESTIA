@@ -10,9 +10,26 @@ import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { SuggestedMatch, RTCSessionConfig } from '../types';
 import { MatchRequestToast } from '@/components/MatchRequestToast';
+import { ensureQueued } from '../ensure-queued';
 
 // Matchmaking Constants
 const POLLING_INTERVAL_MS = 3000;
+/**
+ * How often the queue row's `updated_at` is refreshed.
+ *
+ * find_match ignores rows older than 15s and deletes them at 20s, so the old
+ * 10s left a single late heartbeat able to make a member invisible. This runs
+ * on its own timer rather than inside the poll: the poll holds a re-entrancy
+ * guard that a hung request would never release, and the row must keep
+ * breathing even when a poll is stuck.
+ */
+const HEARTBEAT_INTERVAL_MS = 5000;
+/**
+ * Consecutive failed upkeep attempts before the member is told. Below this a
+ * blip is invisible to them; above it the row is about to be deleted and a
+ * silent spinner would be a lie.
+ */
+const MAX_QUEUE_UPKEEP_FAILURES = 3;
 const MATCH_THRESHOLD_START = 0.8;
 const MATCH_THRESHOLD_MIN = 0.65;
 const MATCH_THRESHOLD_DECAY_RATE = 0.01;
@@ -65,6 +82,7 @@ export function useMatchQueue({
   const startTimeRef = useRef<number | null>(null);
   const isPollingRef = useRef(false);
   const hasConsentedToQueueIdRef = useRef<string | null>(null);
+  const upkeepFailuresRef = useRef(0);
 
   // Sync refs
   useEffect(() => {
@@ -248,11 +266,62 @@ export function useMatchQueue({
   useEffect(() => {
     if (status !== 'waiting' || !currentUserId || !activeQueueId) return;
 
+    let cancelled = false;
+    upkeepFailuresRef.current = 0;
+
     const interval = setInterval(async () => {
       if (!myEmbeddingRef.current || isPollingRef.current) return;
 
       isPollingRef.current = true;
       try {
+        // Put the row back if it has already been removed. This has to happen
+        // before find_match, which returns nothing at all when the caller has
+        // no waiting row - that is how members ended up watching a search that
+        // could never succeed.
+        try {
+          const { queueId, reinserted } = await ensureQueued(
+            supabase,
+            activeQueueId,
+            {
+              userId: currentUserId,
+              topic: config.topic,
+              mode: config.mode,
+              embedding: myEmbeddingRef.current,
+            }
+          );
+          upkeepFailuresRef.current = 0;
+
+          if (reinserted) {
+            // The member may have left, or re-queued on a new topic, while the
+            // check above was in flight. Re-inserting then would leave a
+            // waiting row nobody owns, which another member can be matched
+            // into for up to 15s and then find empty.
+            if (cancelled || activeQueueIdRef.current !== activeQueueId) {
+              await supabase.from('match_queue').delete().eq('id', queueId);
+              return;
+            }
+
+            console.warn('[RTC] Queue row had been dropped; re-joined');
+            // The replacement row has no consent on it, and the peer's consent
+            // points at the row that was deleted. Keeping the old belief would
+            // show "peer accepted" for a pairing that can never complete.
+            hasConsentedToQueueIdRef.current = null;
+            setSuggestedMatch(null);
+            setActiveQueueId(queueId);
+            return;
+          }
+        } catch (err) {
+          upkeepFailuresRef.current += 1;
+          console.error('[RTC] Queue upkeep failed', err);
+          if (upkeepFailuresRef.current >= MAX_QUEUE_UPKEEP_FAILURES) {
+            setStatus('error');
+            toast.error('Lost your place in the queue. Please try again.');
+            return;
+          }
+        }
+
+        if (cancelled) return;
+
         const elapsedSec =
           (Date.now() - (startTimeRef.current || Date.now())) / 1000;
         const decay = elapsedSec * MATCH_THRESHOLD_DECAY_RATE;
@@ -327,10 +396,43 @@ export function useMatchQueue({
       }
     }, POLLING_INTERVAL_MS);
 
-    return () => clearInterval(interval);
-  }, [status, currentUserId, activeQueueId, supabase]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [status, currentUserId, activeQueueId, supabase, config.topic, config.mode]);
 
-  // Heartbeat
+  // Bring the row back to life the moment the member returns to the tab.
+  //
+  // Hidden tabs have their timers throttled to roughly once a minute, so the
+  // heartbeat below cannot keep up while the member is looking at something
+  // else. The server windows are wide enough to absorb that, and this closes
+  // the gap immediately rather than waiting for the next tick.
+  useEffect(() => {
+    if (!activeQueueId || status !== 'waiting') return;
+
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      void supabase
+        .from('match_queue')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeQueueId);
+    };
+
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [activeQueueId, status, supabase]);
+
+  // Heartbeat, on its own timer.
+  //
+  // Deliberately not folded into the poll: the poll guards against re-entrancy
+  // with a ref that is only released in a `finally`, so a request that never
+  // settles would stop the row being refreshed and it would be deleted at 20s -
+  // the very failure this file exists to prevent.
   useEffect(() => {
     if (!activeQueueId || status !== 'waiting') return;
     const interval = setInterval(async () => {
@@ -339,7 +441,7 @@ export function useMatchQueue({
         .update({ updated_at: new Date().toISOString() })
         .eq('id', activeQueueId);
       if (error) console.error('[RTC] Heartbeat failed', error);
-    }, 10000);
+    }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [activeQueueId, status, supabase]);
 
