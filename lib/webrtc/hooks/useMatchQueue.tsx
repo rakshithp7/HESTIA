@@ -402,6 +402,31 @@ export function useMatchQueue({
     };
   }, [status, currentUserId, activeQueueId, supabase, config.topic, config.mode]);
 
+  // Bring the row back to life the moment the member returns to the tab.
+  //
+  // Hidden tabs have their timers throttled to roughly once a minute, so the
+  // heartbeat below cannot keep up while the member is looking at something
+  // else. The server windows are wide enough to absorb that, and this closes
+  // the gap immediately rather than waiting for the next tick.
+  useEffect(() => {
+    if (!activeQueueId || status !== 'waiting') return;
+
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      void supabase
+        .from('match_queue')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeQueueId);
+    };
+
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [activeQueueId, status, supabase]);
+
   // Heartbeat, on its own timer.
   //
   // Deliberately not folded into the poll: the poll guards against re-entrancy
