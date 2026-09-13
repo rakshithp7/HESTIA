@@ -1,29 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BOOT_FLAG, BOOT_STORAGE_KEY } from '@/lib/boot-loader';
+import {
+  BOOT_FLAG,
+  BOOT_START_GLOBAL,
+  BOOT_STORAGE_KEY,
+  FADE_DURATION_MS,
+  FILL_DURATION_MS,
+} from '@/lib/boot-loader';
 
 /**
  * First-visit splash: the Hestia mark fills from the bottom up over a solid
  * background, then fades out.
  *
- * Shown once per browser. The decision is made by the blocking script in
- * `app/layout.tsx` rather than here, because a `useEffect` runs after first
- * paint - deciding in React would let a frame of the real page through before
- * the overlay appeared. The overlay is always in the server HTML and CSS keeps
- * it hidden unless that script added the flag, so there is no hydration
- * mismatch either way.
+ * Whether it shows at all is decided by the blocking script in
+ * `lib/boot-loader.ts`, not here - a `useEffect` runs after first paint, so
+ * deciding in React would let a frame of the real page through first. The
+ * overlay is always in the server HTML and CSS keeps it hidden unless that
+ * script set the flag, so there is no hydration mismatch either way.
  */
 
-/** Long enough to read as deliberate, short enough not to be in the way. */
-const FILL_DURATION_MS = 1400;
-/** Matches the opacity transition in globals.css. */
-const FADE_DURATION_MS = 400;
 /**
- * Cap on waiting for `window.load`. A single slow image must not hold the
- * splash open, so the fill animation wins after this regardless.
+ * Cap on waiting for `window.load`. The splash exists to cover a slow load, so
+ * this is not short - but it is bounded, because one stalled image must not
+ * hold the screen indefinitely.
  */
-const MAX_ASSET_WAIT_MS = 4000;
+const MAX_ASSET_WAIT_MS = 8000;
 
 export function BootLoader() {
   const [done, setDone] = useState(false);
@@ -49,9 +51,15 @@ export function BootLoader() {
       }, FADE_DURATION_MS);
     };
 
-    // Hold until the fill has finished and the page's own assets are in, so the
-    // splash does not hand over to a half-painted screen.
-    const started = performance.now();
+    // Measured from when the splash actually appeared, which the blocking
+    // script recorded before paint. Timing from this effect instead would cut
+    // the animation short on a slow connection, where hydration can happen
+    // seconds after the overlay first showed.
+    const shownAt =
+      (window as unknown as Record<string, number | undefined>)[
+        BOOT_START_GLOBAL
+      ] ?? Date.now();
+
     const waitForAssets = () =>
       new Promise<void>((resolve) => {
         if (document.readyState === 'complete') return resolve();
@@ -64,7 +72,7 @@ export function BootLoader() {
       });
 
     void waitForAssets().then(() => {
-      const remaining = FILL_DURATION_MS - (performance.now() - started);
+      const remaining = FILL_DURATION_MS - (Date.now() - shownAt);
       dismissTimer = window.setTimeout(dismiss, Math.max(remaining, 0));
     });
 

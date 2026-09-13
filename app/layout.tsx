@@ -11,7 +11,7 @@ import { FloatingSessionWindow } from '@/components/session/FloatingSessionWindo
 import { ConnectedSessionStatusBar } from '@/components/session/ConnectedSessionStatusBar';
 import { SessionTitleHandler } from '@/components/session/SessionTitleHandler';
 import { BootLoader } from '@/components/BootLoader';
-import { bootLoaderScript } from '@/lib/boot-loader';
+import { BootLoaderHead } from '@/components/BootLoaderHead';
 
 const unna = Unna({
   variable: '--font-unna',
@@ -69,8 +69,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Must run before first paint - see lib/boot-loader.ts. */}
-        <script dangerouslySetInnerHTML={{ __html: bootLoaderScript }} />
+        <BootLoaderHead />
       </head>
       <body
         className={`${unna.variable} ${difont.variable} ${openDyslexic.variable} antialiased`}
