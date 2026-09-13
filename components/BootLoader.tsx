@@ -1,34 +1,58 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   BOOT_FLAG,
   BOOT_START_GLOBAL,
   BOOT_STORAGE_KEY,
+  BOOT_WARM_IMAGES,
+  BOOT_WARM_ROUTES,
+  BOOT_WARM_TIMEOUT_MS,
   FADE_DURATION_MS,
   FILL_DURATION_MS,
 } from '@/lib/boot-loader';
 
 /**
- * First-visit splash: the Hestia mark fills from the bottom up over a solid
- * background, then fades out.
+ * First-visit splash and preloader: the Hestia mark fills from the bottom up
+ * over a solid background while the site's shared assets and main route bundles
+ * are fetched, then fades out.
  *
  * Whether it shows at all is decided by the blocking script in
- * `lib/boot-loader.ts`, not here - a `useEffect` runs after first paint, so
- * deciding in React would let a frame of the real page through first. The
- * overlay is always in the server HTML and CSS keeps it hidden unless that
- * script set the flag, so there is no hydration mismatch either way.
+ * `BootLoaderHead`, not here - a `useEffect` runs after first paint, so deciding
+ * in React would let a frame of the real page through first. The overlay is
+ * always in the server HTML and CSS keeps it hidden unless that script set the
+ * flag, so there is no hydration mismatch either way.
  */
 
-/**
- * Cap on waiting for `window.load`. The splash exists to cover a slow load, so
- * this is not short - but it is bounded, because one stalled image must not
- * hold the screen indefinitely.
- */
-const MAX_ASSET_WAIT_MS = 8000;
+/** Resolves when `load` fires, or immediately if it already has. */
+function pageLoaded(): Promise<void> {
+  return new Promise((resolve) => {
+    if (document.readyState === 'complete') return resolve();
+    window.addEventListener('load', () => resolve(), { once: true });
+  });
+}
+
+function imageLoaded(src: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    // A failed warm-up is not a failed page load - resolve either way.
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = src;
+  });
+}
+
+function withTimeout(work: Promise<unknown>, ms: number): Promise<void> {
+  return Promise.race([
+    work.then(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, ms)),
+  ]);
+}
 
 export function BootLoader() {
   const [done, setDone] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -36,11 +60,13 @@ export function BootLoader() {
 
     let dismissTimer: number | undefined;
     let removeTimer: number | undefined;
+    let cancelled = false;
 
     const dismiss = () => {
+      if (cancelled) return;
       setDone(true);
       try {
-        localStorage.setItem(BOOT_STORAGE_KEY, '1');
+        sessionStorage.setItem(BOOT_STORAGE_KEY, '1');
       } catch {
         // Private browsing or storage disabled - the splash just shows again.
       }
@@ -53,34 +79,41 @@ export function BootLoader() {
 
     // Measured from when the splash actually appeared, which the blocking
     // script recorded before paint. Timing from this effect instead would cut
-    // the animation short on a slow connection, where hydration can happen
-    // seconds after the overlay first showed.
+    // the fill short on a slow connection, where hydration can happen seconds
+    // after the overlay first showed.
     const shownAt =
       (window as unknown as Record<string, number | undefined>)[
         BOOT_START_GLOBAL
       ] ?? Date.now();
 
-    const waitForAssets = () =>
-      new Promise<void>((resolve) => {
-        if (document.readyState === 'complete') return resolve();
-        const onLoad = () => resolve();
-        window.addEventListener('load', onLoad, { once: true });
-        window.setTimeout(() => {
-          window.removeEventListener('load', onLoad);
-          resolve();
-        }, MAX_ASSET_WAIT_MS);
-      });
+    // The point of holding the screen: fetch the things the next interaction
+    // will need, so navigation after the splash does not hit the network.
+    const warm = Promise.all([
+      pageLoaded(),
+      document.fonts?.ready ?? Promise.resolve(),
+      ...BOOT_WARM_IMAGES.map(imageLoaded),
+      ...BOOT_WARM_ROUTES.map(async (route) => {
+        try {
+          router.prefetch(route);
+        } catch {
+          // Prefetch is best effort; never block the splash on it.
+        }
+      }),
+    ]);
 
-    void waitForAssets().then(() => {
+    void withTimeout(warm, BOOT_WARM_TIMEOUT_MS).then(() => {
+      if (cancelled) return;
+      // Never cut the fill animation off part-way, however fast warming was.
       const remaining = FILL_DURATION_MS - (Date.now() - shownAt);
       dismissTimer = window.setTimeout(dismiss, Math.max(remaining, 0));
     });
 
     return () => {
+      cancelled = true;
       window.clearTimeout(dismissTimer);
       window.clearTimeout(removeTimer);
     };
-  }, []);
+  }, [router]);
 
   return (
     <div

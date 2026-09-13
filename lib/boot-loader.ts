@@ -7,8 +7,38 @@
  * name and the timings.
  */
 
-/** Set once the splash has played, so it never plays again in this browser. */
-export const BOOT_STORAGE_KEY = 'hestia:booted';
+/**
+ * Set once the splash has played and the essentials are warm.
+ *
+ * Deliberately `sessionStorage`, not `localStorage`. The splash is a preloader:
+ * it holds the screen while the shared assets and the main route bundles are
+ * fetched, so that navigation afterwards is instant. A `localStorage` flag made
+ * it play exactly once per browser ever, which meant that after a single visit
+ * it never appeared again no matter how slow the connection - it was invisible
+ * precisely when it was needed.
+ */
+export const BOOT_STORAGE_KEY = 'hestia:warmed';
+
+/**
+ * Routes warmed while the splash is up - everything a signed-out visitor can
+ * reach from the navbar. Prefetching these means the first navigation after the
+ * splash does not hit the network.
+ */
+export const BOOT_WARM_ROUTES = [
+  '/about',
+  '/connect',
+  '/resources',
+  '/contact',
+] as const;
+
+/** Images warmed while the splash is up. */
+export const BOOT_WARM_IMAGES = ['/logo.svg'] as const;
+
+/**
+ * Upper bound on warming. The splash should cover a slow load, but a stalled
+ * request must not hold the screen forever.
+ */
+export const BOOT_WARM_TIMEOUT_MS = 10000;
 
 /** Class on `<html>` while the splash should be visible. */
 export const BOOT_FLAG = 'first-visit';

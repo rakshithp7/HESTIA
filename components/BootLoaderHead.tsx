@@ -50,7 +50,7 @@ const script = `
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       d.classList.add('dark');
     }
-    if (!localStorage.getItem('${BOOT_STORAGE_KEY}')) {
+    if (!sessionStorage.getItem('${BOOT_STORAGE_KEY}')) {
       d.classList.add('${BOOT_FLAG}');
       window.${BOOT_START_GLOBAL} = Date.now();
       setTimeout(function () { d.classList.remove('${BOOT_FLAG}'); }, ${BOOT_FAILSAFE_MS});
