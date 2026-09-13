@@ -35,7 +35,7 @@ const Navbar = () => {
     // flipped the cursor pointer/arrow/pointer at every one. Padding does not
     // widen the underline, which only spans the text.
     return cn(
-      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 px-5 py-5',
+      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 px-5 py-5 cursor-pointer',
       isActive && 'underline'
     );
   };
@@ -134,7 +134,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="w-full bg-muted px-4 py-2 relative">
+    <nav className="w-full bg-muted px-4 py-2 relative z-40">
       <div className="flex items-center justify-between h-16">
         {/* Logo */}
         <div className="flex items-center min-w-[40px]">
@@ -164,7 +164,7 @@ const Navbar = () => {
               CONTACT US
             </Link>
           </div>
-          <div className="ml-auto flex items-center gap-6 pr-6">
+          <div className="ml-auto flex items-center gap-6 pr-6 cursor-pointer">
             <AccessibilityMenu />
             <ThemeToggle />
             {isAuthed ? (
