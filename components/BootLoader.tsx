@@ -8,6 +8,7 @@ import {
   BOOT_START_GLOBAL,
   BOOT_WARM_IMAGES,
   BOOT_WARM_ROUTES,
+  BOOT_FONT_TIMEOUT_MS,
   BOOT_WARM_TIMEOUT_MS,
   FADE_DURATION_MS,
 } from '@/lib/boot-loader';
@@ -23,11 +24,22 @@ import {
  * long as the work takes.
  */
 
-/** Resolves when `load` fires, or immediately if it already has. */
-function pageLoaded(): Promise<void> {
+/**
+ * Resolves when the document is parsed and styled - not when every last image
+ * has arrived.
+ *
+ * `load` was the obvious signal and the wrong one: it waits on every image on
+ * the page, so on a slow connection the loader sat there for seconds after the
+ * page was perfectly ready to look at. Stylesheets are render-blocking, so by
+ * the time this fires the CSS is in and the page will not reflow underneath the
+ * user; the remaining images land behind the skeletons.
+ */
+function domReady(): Promise<void> {
   return new Promise((resolve) => {
-    if (document.readyState === 'complete') return resolve();
-    window.addEventListener('load', () => resolve(), { once: true });
+    if (document.readyState !== 'loading') return resolve();
+    document.addEventListener('DOMContentLoaded', () => resolve(), {
+      once: true,
+    });
   });
 }
 
@@ -90,10 +102,15 @@ export function BootLoader() {
     for (const src of BOOT_WARM_IMAGES) void imageLoaded(src);
 
     // What the loader actually waits on: the things that decide whether this
-    // screen is ready to look at.
+    // screen is ready to look at. Webfonts are bounded separately - they are
+    // worth a short wait to avoid text reflowing under the user, but not worth
+    // holding the whole site for.
     const warm = Promise.all([
-      pageLoaded(),
-      document.fonts?.ready ?? Promise.resolve(),
+      domReady(),
+      withTimeout(
+        document.fonts?.ready ?? Promise.resolve(),
+        BOOT_FONT_TIMEOUT_MS
+      ),
     ]);
 
     void withTimeout(warm, BOOT_WARM_TIMEOUT_MS).then(() => {

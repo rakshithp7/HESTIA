@@ -2,6 +2,7 @@ import {
   BOOT_COLORS,
   BOOT_FAILSAFE_MS,
   BOOT_START_GLOBAL,
+  BREATHE_DURATION_MS,
   FADE_DURATION_MS,
   FILL_DURATION_MS,
 } from '@/lib/boot-loader';
@@ -21,6 +22,11 @@ import {
  * because as a separate request the mark stayed invisible until it downloaded -
  * which is exactly the case the loader exists to cover.
  *
+ * Once the fill completes the mark breathes rather than sitting still. On a slow
+ * connection the 1400ms fill finishes long before the page does, and a finished,
+ * motionless logo reads as frozen - the breathing is what says the work is still
+ * going.
+ *
  * The overlay is visible by default and is dismissed once the client says the
  * essentials are ready, rather than being switched on by a flag. On a warm cache
  * that happens within a few frames and `data-instant` removes it with no fade,
@@ -36,9 +42,10 @@ html.dark #boot-loader{background:${BOOT_COLORS.darkBackground}}
 #boot-loader[hidden]{display:none}
 .boot-logo{position:relative;width:clamp(96px,18vmin,160px);aspect-ratio:${BOOT_MASK_WIDTH} / ${BOOT_MASK_HEIGHT};-webkit-mask-image:var(--boot-mask);mask-image:var(--boot-mask);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
 .boot-logo::before{content:'';position:absolute;inset:0;background:${BOOT_COLORS.lightForeground};opacity:.18}
-.boot-logo::after{content:'';position:absolute;right:0;bottom:0;left:0;height:0;background:${BOOT_COLORS.lightForeground};animation:boot-fill ${FILL_DURATION_MS}ms cubic-bezier(.4,0,.2,1) forwards}
+.boot-logo::after{content:'';position:absolute;right:0;bottom:0;left:0;height:0;background:${BOOT_COLORS.lightForeground};animation:boot-fill ${FILL_DURATION_MS}ms cubic-bezier(.4,0,.2,1) forwards,boot-breathe ${BREATHE_DURATION_MS}ms ease-in-out ${FILL_DURATION_MS}ms infinite}
 html.dark .boot-logo::before,html.dark .boot-logo::after{background:${BOOT_COLORS.darkForeground}}
 @keyframes boot-fill{from{height:0}to{height:100%}}
+@keyframes boot-breathe{0%,100%{opacity:1}50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){#boot-loader{transition:none}.boot-logo::after{height:100%;animation:none}}
 `;
 

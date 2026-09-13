@@ -25,6 +25,15 @@ export const FILL_DURATION_MS = 1400;
 export const FADE_DURATION_MS = 400;
 
 /**
+ * One breath of the pulse that runs after the fill completes.
+ *
+ * On a slow connection the fill finishes seconds before the page is ready, and
+ * a full, motionless mark looks like the loader has hung. Slow on purpose - it
+ * should read as waiting, not as a spinner.
+ */
+export const BREATHE_DURATION_MS = 1800;
+
+/**
  * Below this the loader is removed with no fade, on the basis that nothing was
  * painted yet. Kept small on purpose: anything longer and the mark is briefly
  * visible before vanishing, which reads as a glitch. Past this point the loader
@@ -59,6 +68,12 @@ export const BOOT_WARM_ROUTES = [
 
 /** Images warmed while the loader is up. */
 export const BOOT_WARM_IMAGES = ['/logo.svg'] as const;
+
+/**
+ * Upper bound on waiting for webfonts. Worth a moment so headings do not
+ * reflow the instant the loader lifts, but not worth holding the site for.
+ */
+export const BOOT_FONT_TIMEOUT_MS = 2000;
 
 /**
  * Upper bound on warming. The loader should cover a slow load, but a stalled
