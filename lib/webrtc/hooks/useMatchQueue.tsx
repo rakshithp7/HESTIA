@@ -10,9 +10,19 @@ import { toast } from 'sonner';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { SuggestedMatch, RTCSessionConfig } from '../types';
 import { MatchRequestToast } from '@/components/MatchRequestToast';
+import { ensureQueued } from '../ensure-queued';
 
 // Matchmaking Constants
 const POLLING_INTERVAL_MS = 3000;
+/**
+ * How often the queue row's `updated_at` is refreshed.
+ *
+ * find_match ignores rows older than 15s and deletes them at 20s, so 10s left
+ * a single late heartbeat able to make a member invisible. Refreshed on every
+ * poll instead, which gives real margin while the tab is visible. It cannot be
+ * the whole answer - hidden tabs are throttled regardless of the interval -
+ * which is why the poll also repairs a deleted row.
+ */
 const MATCH_THRESHOLD_START = 0.8;
 const MATCH_THRESHOLD_MIN = 0.65;
 const MATCH_THRESHOLD_DECAY_RATE = 0.01;
@@ -253,6 +263,34 @@ export function useMatchQueue({
 
       isPollingRef.current = true;
       try {
+        // Keep the row fresh, and put it back if it has already been removed.
+        // Both have to happen before find_match is called: it returns nothing
+        // at all when the caller has no waiting row, which is how members ended
+        // up watching a search that could never succeed.
+        try {
+          const { queueId, reinserted } = await ensureQueued(
+            supabase,
+            activeQueueId,
+            {
+              userId: currentUserId,
+              topic: config.topic,
+              mode: config.mode,
+              embedding: myEmbeddingRef.current,
+            }
+          );
+          if (reinserted) {
+            console.warn('[RTC] Queue row had been dropped; re-joined');
+            setActiveQueueId(queueId);
+            return;
+          }
+          await supabase
+            .from('match_queue')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', queueId);
+        } catch (err) {
+          console.error('[RTC] Queue upkeep failed', err);
+        }
+
         const elapsedSec =
           (Date.now() - (startTimeRef.current || Date.now())) / 1000;
         const decay = elapsedSec * MATCH_THRESHOLD_DECAY_RATE;
@@ -328,20 +366,7 @@ export function useMatchQueue({
     }, POLLING_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [status, currentUserId, activeQueueId, supabase]);
-
-  // Heartbeat
-  useEffect(() => {
-    if (!activeQueueId || status !== 'waiting') return;
-    const interval = setInterval(async () => {
-      const { error } = await supabase
-        .from('match_queue')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', activeQueueId);
-      if (error) console.error('[RTC] Heartbeat failed', error);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [activeQueueId, status, supabase]);
+  }, [status, currentUserId, activeQueueId, supabase, config.topic, config.mode]);
 
   // Realtime Listeners
   useEffect(() => {
