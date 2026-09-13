@@ -5,7 +5,12 @@ export type FAQItem = {
   heading: string;
   paragraphs?: string[];
   bullets?: string[];
-  subSections?: { title: string; content: string }[];
+  subSections?: {
+    title: string;
+    content: string;
+    /** Optional trailing link, rendered after the content. */
+    link?: { label: string; href: string };
+  }[];
 };
 
 export const FAQ_ITEMS: FAQItem[] = [
@@ -68,6 +73,10 @@ export const FAQ_ITEMS: FAQItem[] = [
         title: 'Credit',
         content:
           'Hestia began as a three-week independent product design project by Diya Sharma, covering the concept, user research, interaction design, visual system, and accessibility decisions, built out in collaboration with a developer.',
+        link: {
+          label: 'Read the full case study',
+          href: 'https://disharma.com/case-studies',
+        },
       },
     ],
   },

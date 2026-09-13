@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 import type { FAQItem, FAQItemId } from '@/data/faq';
 import { FAQ_ITEMS } from '@/data/faq';
 
@@ -22,6 +23,17 @@ function FaqContent({ faq }: { faq: FAQItem }) {
         <div key={index} className="space-y-1">
           <h5 className="text-md font-semibold">{section.title}</h5>
           <p className="text-base leading-relaxed">{section.content}</p>
+          {section.link ? (
+            <a
+              href={section.link.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex w-fit items-center gap-1 text-base text-primary underline underline-offset-4"
+            >
+              {section.link.label}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ) : null}
         </div>
       ))}
       {faq.bullets && (
