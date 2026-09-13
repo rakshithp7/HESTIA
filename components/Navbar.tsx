@@ -126,7 +126,7 @@ const Navbar = () => {
   // On home page when not authenticated, show only ThemeToggle
   if (!isAuthed && pathname === '/') {
     return (
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-4 right-4 z-40 flex cursor-pointer items-center gap-2">
         <AccessibilityMenu />
         <ThemeToggle />
       </div>
@@ -177,7 +177,7 @@ const Navbar = () => {
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
-        <div className="md:hidden flex items-center gap-4 ml-auto">
+        <div className="md:hidden flex items-center gap-4 ml-auto cursor-pointer">
           <AccessibilityMenu />
           <ThemeToggle />
           <Button
