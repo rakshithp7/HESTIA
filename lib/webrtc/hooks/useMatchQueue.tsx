@@ -19,9 +19,15 @@ const POLLING_INTERVAL_MS = 3000;
 const HEARTBEAT_INTERVAL_MS = 5000;
 // Consecutive failures before telling the member, rather than spinning forever.
 const MAX_QUEUE_UPKEEP_FAILURES = 3;
-const MATCH_THRESHOLD_START = 0.8;
-const MATCH_THRESHOLD_MIN = 0.65;
-const MATCH_THRESHOLD_DECAY_RATE = 0.01;
+// gemini-embedding-001 at 768 dims has a compressed range: measured over real
+// topic pairs, unrelated ones score 0.67-0.79 and genuinely related ones
+// 0.87-0.98. The old floor of 0.65 sat below every possible score, so any two
+// topics auto-matched - "software engineer" paired with "soccer" at 0.787.
+// These sit in the gap between the two groups.
+const MATCH_THRESHOLD_START = 0.9;
+const MATCH_THRESHOLD_MIN = 0.83;
+// Reaches the floor in ~35s rather than 7.
+const MATCH_THRESHOLD_DECAY_RATE = 0.002;
 const MATCH_THRESHOLD_EPSILON = 0.001;
 
 type UseMatchQueueProps = {
