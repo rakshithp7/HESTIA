@@ -29,8 +29,13 @@ const Navbar = () => {
       href === '/'
         ? pathname === '/'
         : pathname?.startsWith(href) || pathname === href;
+    // Spacing lives in the links' own padding rather than in the container's
+    // gap, so that adjacent hit areas touch. With a gap there were ~40px of
+    // dead space between each pair, and dragging the mouse along the bar
+    // flipped the cursor pointer/arrow/pointer at every one. Padding does not
+    // widen the underline, which only spans the text.
     return cn(
-      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 mt-2',
+      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 mt-2 px-5 py-2',
       isActive && 'underline'
     );
   };
@@ -145,7 +150,7 @@ const Navbar = () => {
         </div>
         {/* Desktop menu */}
         <div className="hidden md:flex flex-1 items-center">
-          <div className="flex flex-1 justify-center items-center gap-10">
+          <div className="flex flex-1 justify-center items-center">
             <Link href="/about" className={linkClass('/about')}>
               ABOUT
             </Link>
