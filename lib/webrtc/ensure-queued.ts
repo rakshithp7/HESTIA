@@ -1,9 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/**
- * Minimal surface of the client this needs, so the logic can be tested without
- * a real Supabase connection.
- */
+/** Minimal client surface, so this is testable without a real connection. */
 export type QueueClient = Pick<SupabaseClient, 'from'>;
 
 export type QueueEntry = {
@@ -16,19 +13,9 @@ export type QueueEntry = {
 /**
  * Make sure the caller still has a waiting row, re-inserting it if not.
  *
- * `find_match` deletes any row whose `updated_at` is older than 20 seconds, and
- * the heartbeat that keeps it fresh is a timer. Browsers clamp timers in hidden
- * tabs - and apply intensive throttling after a tab has been hidden for five
- * minutes - so a member who is simply looking at another window can miss enough
- * heartbeats to have their row deleted underneath them.
- *
- * Nothing noticed. The client kept polling `find_match`, which returns
- * immediately when the caller has no queue row, so the member waited forever on
- * a screen that looked like it was still searching. Widening the margins does
- * not fix this, because a throttled tab can miss any fixed interval; the queue
- * entry has to be able to heal itself.
- *
- * Returns the id of the live row - the existing one, or the replacement.
+ * find_match deletes stale rows, and find_match returns nothing at all when the
+ * caller has no row - so a member whose row was collected sat on a search that
+ * could never succeed. Returns the id of the live row.
  */
 export async function ensureQueued(
   client: QueueClient,
@@ -41,18 +28,14 @@ export async function ensureQueued(
     .eq('id', queueId)
     .maybeSingle();
 
-  if (error) {
-    // A failed check is not evidence the row is gone. Re-inserting here would
-    // risk a duplicate row for the same member on any transient error.
-    throw error;
-  }
+  // A failed check is not evidence the row is gone; re-inserting on a transient
+  // error would leave the member with two rows.
+  if (error) throw error;
 
   if (existing) return { queueId, reinserted: false };
 
-  // Clear anything else this member has left behind before re-joining, so a
-  // half-dead row cannot linger and be matched against. `match_queue` has no
-  // unique constraint on `user_id`, so if this fails the insert below would
-  // give the member two waiting rows - exactly what it is here to prevent.
+  // No unique constraint on user_id, so a failed delete here would mean two
+  // waiting rows after the insert.
   const { error: deleteError } = await client
     .from('match_queue')
     .delete()

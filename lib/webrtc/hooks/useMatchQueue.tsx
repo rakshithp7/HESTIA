@@ -14,21 +14,10 @@ import { ensureQueued } from '../ensure-queued';
 
 // Matchmaking Constants
 const POLLING_INTERVAL_MS = 3000;
-/**
- * How often the queue row's `updated_at` is refreshed.
- *
- * find_match ignores rows older than 15s and deletes them at 20s, so the old
- * 10s left a single late heartbeat able to make a member invisible. This runs
- * on its own timer rather than inside the poll: the poll holds a re-entrancy
- * guard that a hung request would never release, and the row must keep
- * breathing even when a poll is stuck.
- */
+// Its own timer, not the poll: the poll's re-entrancy guard is only released in
+// a finally, so a hung request would stop the row being refreshed.
 const HEARTBEAT_INTERVAL_MS = 5000;
-/**
- * Consecutive failed upkeep attempts before the member is told. Below this a
- * blip is invisible to them; above it the row is about to be deleted and a
- * silent spinner would be a lie.
- */
+// Consecutive failures before telling the member, rather than spinning forever.
 const MAX_QUEUE_UPKEEP_FAILURES = 3;
 const MATCH_THRESHOLD_START = 0.8;
 const MATCH_THRESHOLD_MIN = 0.65;
@@ -274,10 +263,7 @@ export function useMatchQueue({
 
       isPollingRef.current = true;
       try {
-        // Put the row back if it has already been removed. This has to happen
-        // before find_match, which returns nothing at all when the caller has
-        // no waiting row - that is how members ended up watching a search that
-        // could never succeed.
+        // Before find_match, which returns nothing when the caller has no row.
         try {
           const { queueId, reinserted } = await ensureQueued(
             supabase,
@@ -292,19 +278,15 @@ export function useMatchQueue({
           upkeepFailuresRef.current = 0;
 
           if (reinserted) {
-            // The member may have left, or re-queued on a new topic, while the
-            // check above was in flight. Re-inserting then would leave a
-            // waiting row nobody owns, which another member can be matched
-            // into for up to 15s and then find empty.
+            // They may have left or re-queued while this was in flight; an
+            // orphan row would be matched into and found empty.
             if (cancelled || activeQueueIdRef.current !== activeQueueId) {
               await supabase.from('match_queue').delete().eq('id', queueId);
               return;
             }
 
             console.warn('[RTC] Queue row had been dropped; re-joined');
-            // The replacement row has no consent on it, and the peer's consent
-            // points at the row that was deleted. Keeping the old belief would
-            // show "peer accepted" for a pairing that can never complete.
+            // Consent pointed at the deleted row.
             hasConsentedToQueueIdRef.current = null;
             setSuggestedMatch(null);
             setActiveQueueId(queueId);
@@ -402,12 +384,8 @@ export function useMatchQueue({
     };
   }, [status, currentUserId, activeQueueId, supabase, config.topic, config.mode]);
 
-  // Bring the row back to life the moment the member returns to the tab.
-  //
-  // Hidden tabs have their timers throttled to roughly once a minute, so the
-  // heartbeat below cannot keep up while the member is looking at something
-  // else. The server windows are wide enough to absorb that, and this closes
-  // the gap immediately rather than waiting for the next tick.
+  // Hidden tabs throttle timers to about once a minute, so refresh on return
+  // rather than waiting for the next tick.
   useEffect(() => {
     if (!activeQueueId || status !== 'waiting') return;
 
@@ -427,12 +405,7 @@ export function useMatchQueue({
     };
   }, [activeQueueId, status, supabase]);
 
-  // Heartbeat, on its own timer.
-  //
-  // Deliberately not folded into the poll: the poll guards against re-entrancy
-  // with a ref that is only released in a `finally`, so a request that never
-  // settles would stop the row being refreshed and it would be deleted at 20s -
-  // the very failure this file exists to prevent.
+  // Heartbeat.
   useEffect(() => {
     if (!activeQueueId || status !== 'waiting') return;
     const interval = setInterval(async () => {
