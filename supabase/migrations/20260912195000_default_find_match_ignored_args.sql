@@ -147,5 +147,7 @@ EXCEPTION
 end;
 $$;
 
-comment on function find_match is
+-- Qualified with the argument list: an unqualified `comment on function` fails
+-- with 42725 the moment a second overload exists, as it did here.
+comment on function find_match(uuid, vector(768), text, uuid[], float) is
   'Matches the calling member against the queue. Identity, search vector, mode and block list are derived server-side; p_user_id, p_topic_embedding, p_mode and p_excluded_user_ids are accepted for backwards compatibility and ignored. Only p_threshold is honoured, clamped by clamp_match_threshold.';
