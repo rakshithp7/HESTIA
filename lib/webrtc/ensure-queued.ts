@@ -50,8 +50,15 @@ export async function ensureQueued(
   if (existing) return { queueId, reinserted: false };
 
   // Clear anything else this member has left behind before re-joining, so a
-  // half-dead row cannot linger and be matched against.
-  await client.from('match_queue').delete().eq('user_id', entry.userId);
+  // half-dead row cannot linger and be matched against. `match_queue` has no
+  // unique constraint on `user_id`, so if this fails the insert below would
+  // give the member two waiting rows - exactly what it is here to prevent.
+  const { error: deleteError } = await client
+    .from('match_queue')
+    .delete()
+    .eq('user_id', entry.userId);
+
+  if (deleteError) throw deleteError;
 
   const { data: created, error: insertError } = await client
     .from('match_queue')
