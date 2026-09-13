@@ -35,8 +35,8 @@ const Navbar = () => {
     // flipped the cursor pointer/arrow/pointer at every one. Padding does not
     // widen the underline, which only spans the text.
     return cn(
-      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 px-5 py-5',
-      isActive && 'underline'
+      'text-lg lg:text-xl tracking-widest font-difont px-5 py-5 nav-link',
+      isActive && 'is-active'
     );
   };
 
@@ -126,7 +126,7 @@ const Navbar = () => {
   // On home page when not authenticated, show only ThemeToggle
   if (!isAuthed && pathname === '/') {
     return (
-      <div className="absolute top-4 right-4 z-40 flex cursor-pointer items-center gap-2">
+      <div className="absolute top-4 right-4 z-40 flex items-center [&>*]:px-1">
         <AccessibilityMenu />
         <ThemeToggle />
       </div>
@@ -134,7 +134,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="w-full bg-muted px-4 py-2 relative z-40 cursor-pointer">
+    <nav className="w-full bg-muted px-4 py-2 relative z-40">
       <div className="flex items-center justify-between h-16">
         {/* Logo */}
         <div className="flex items-center min-w-[40px]">
@@ -164,7 +164,7 @@ const Navbar = () => {
               CONTACT US
             </Link>
           </div>
-          <div className="ml-auto flex items-center gap-6 pr-6">
+          <div className="ml-auto flex items-center pr-3 [&>*]:px-3">
             <AccessibilityMenu />
             <ThemeToggle />
             {isAuthed ? (
@@ -177,7 +177,7 @@ const Navbar = () => {
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
-        <div className="md:hidden flex items-center gap-4 ml-auto">
+        <div className="md:hidden flex items-center ml-auto [&>*]:px-2">
           <AccessibilityMenu />
           <ThemeToggle />
           <Button
