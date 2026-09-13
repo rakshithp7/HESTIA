@@ -29,14 +29,9 @@ const Navbar = () => {
       href === '/'
         ? pathname === '/'
         : pathname?.startsWith(href) || pathname === href;
-    // Spacing lives in the links' own padding rather than in the container's
-    // gap, so that adjacent hit areas touch. With a gap there were ~40px of
-    // dead space between each pair, and dragging the mouse along the bar
-    // flipped the cursor pointer/arrow/pointer at every one. Padding does not
-    // widen the underline, which only spans the text.
     return cn(
-      'text-lg lg:text-xl tracking-widest font-difont px-5 py-5 nav-link',
-      isActive && 'is-active'
+      'text-lg lg:text-xl tracking-widest font-difont hover:underline underline-offset-4 mt-2',
+      isActive && 'underline'
     );
   };
 
@@ -126,7 +121,7 @@ const Navbar = () => {
   // On home page when not authenticated, show only ThemeToggle
   if (!isAuthed && pathname === '/') {
     return (
-      <div className="absolute top-4 right-4 z-40 flex items-center [&>*]:px-1">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
         <AccessibilityMenu />
         <ThemeToggle />
       </div>
@@ -134,7 +129,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="w-full bg-muted px-4 py-2 relative z-40">
+    <nav className="w-full bg-muted px-4 py-2 relative">
       <div className="flex items-center justify-between h-16">
         {/* Logo */}
         <div className="flex items-center min-w-[40px]">
@@ -150,7 +145,7 @@ const Navbar = () => {
         </div>
         {/* Desktop menu */}
         <div className="hidden md:flex flex-1 items-center">
-          <div className="flex flex-1 justify-center items-center">
+          <div className="flex flex-1 justify-center items-center gap-10">
             <Link href="/about" className={linkClass('/about')}>
               ABOUT
             </Link>
@@ -164,7 +159,7 @@ const Navbar = () => {
               CONTACT US
             </Link>
           </div>
-          <div className="ml-auto flex items-center pr-3 [&>*]:px-3">
+          <div className="ml-auto flex items-center gap-6 pr-6">
             <AccessibilityMenu />
             <ThemeToggle />
             {isAuthed ? (
@@ -177,7 +172,7 @@ const Navbar = () => {
           </div>
         </div>
         {/* Mobile controls (right aligned) */}
-        <div className="md:hidden flex items-center ml-auto [&>*]:px-2">
+        <div className="md:hidden flex items-center gap-4 ml-auto">
           <AccessibilityMenu />
           <ThemeToggle />
           <Button
