@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/require-user';
+import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { createVerificationSession } from '@/lib/stripe/identity';
 import type { Profile } from '@/lib/supabase/types';
 import { nextProfileStatusForSession } from '@/lib/verification';
@@ -65,7 +66,10 @@ export async function POST() {
       verification_completed_at: null,
     };
 
-    const { error: updateError } = await supabase
+    // Service client for the same reason as /api/identity/session: members have
+    // no UPDATE grant on verification_status. requireUser above still
+    // authenticates the caller and the write is scoped to their own row.
+    const { error: updateError } = await getSupabaseServiceClient()
       .from('profiles')
       .update(updatePayload)
       .eq('id', profile.id)
