@@ -67,5 +67,3 @@ Google Gemini · Vitest
 | `supabase/migrations/` | Schema, RLS policies, and the matching functions |
 | `components/` | UI primitives plus chat, waveform and session components |
 | `tests/` | Unit tests and a live security-posture suite |
-
-Progress is tracked in [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md).
