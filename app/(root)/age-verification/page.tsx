@@ -48,12 +48,14 @@ export default async function AgeVerificationPage() {
             with us (it&apos;s easy, I promise!) through uploading a photo ID.
           </p>
           <p>
-            We want to make sure that all users are at least 16 years old, but
-            also ensure that users are matched with chat buddies within their
-            age group. Once you complete this step, you have the option to
-            create an account and save your verification information. Otherwise,
-            feel free to continue as a guest (though you will have to
-            re-verify).
+            You must be 16 or older to use Hestia, and we confirm this from your
+            photo ID. If you are under 16, you will not be able to continue.
+          </p>
+          <p>
+            We also use your date of birth to keep two groups separate: members
+            aged 16 and 17 are only ever matched with other 16 and 17 year olds,
+            and adults are only ever matched with other adults. The two never
+            mix.
           </p>
         </div>
         <Button asChild variant="outline" className="hover:underline text-sm">

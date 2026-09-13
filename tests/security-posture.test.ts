@@ -60,6 +60,16 @@ describe.skipIf(!configured)('anon cannot reach privileged helpers', () => {
     expect(status).toBe(401);
   });
 
+  it('cannot read an arbitrary member age band', async () => {
+    const { status } = await anonRpc('caller_age_band', { p_caller: someUuid });
+    expect(status).toBe(401);
+  });
+
+  it('cannot derive an age band from a date of birth', async () => {
+    const { status } = await anonRpc('age_band', { p_dob: '2000-01-01' });
+    expect(status).toBe(401);
+  });
+
   it('cannot read the ban list', async () => {
     expect(await anonSelect('active_user_bans')).toBe(401);
   });

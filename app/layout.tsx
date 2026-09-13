@@ -51,7 +51,7 @@ const openDyslexic = localFont({
 export const metadata: Metadata = {
   title: 'Hestia - Creating a safe space for all, founded on connection.',
   description:
-    'Hestia is a completely free and anonymous chat service that allows you to talk to another community member in your age group based on your choice of topic. Our aim is to provide a judgement-free space founded on human connection, understanding, and unity.',
+    'Hestia is a completely free and anonymous chat service for members aged 16 and over that allows you to talk to another verified community member in your age group, based on your choice of topic. Our aim is to provide a judgement-free space founded on human connection, understanding, and unity.',
   icons: {
     icon: '/logo.svg',
     shortcut: '/logo.svg',

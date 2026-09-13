@@ -47,10 +47,12 @@ export default function AboutPage() {
             What is Hestia?
           </h2>
           <p className="text-md md:text-lg leading-relaxed drop-shadow-sm">
-            Hestia is a completely free and anonymous chat service that allows
-            you to talk to another community member in your age group based on
-            your choice of topic. Our aim is to provide a judgement-free space
-            founded on human connection, understanding, and unity.
+            Hestia is a completely free and anonymous chat service for members
+            aged 16 and over that allows you to talk to another verified
+            community member in your age group, based on your choice of topic.
+            Under-18s are only ever matched with other under-18s. Our aim is to
+            provide a judgement-free space founded on human connection,
+            understanding, and unity.
           </p>
         </div>
       </section>

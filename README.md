@@ -23,7 +23,7 @@
 
 ## Overview
 
-Hestia offers a safe, anonymous space where community members are matched by age group and topic preference. Verified users can start real-time conversations over voice or chat, browse curated mental health resources, and reach out to the team via contact and support flows. The project is built on the Next.js App Router with TypeScript.
+Hestia offers a safe, anonymous space where verified members (16+) are matched by age band and topic preference. Two bands exist and never cross: 16-17 and 18+. Verified users can start real-time conversations over voice or chat, browse curated mental health resources, and reach out to the team via contact and support flows. The project is built on the Next.js App Router with TypeScript.
 
 ## Key Features
 

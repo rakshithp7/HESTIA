@@ -50,3 +50,6 @@ next-env.d.ts
 /.headroom/
 /.remember/
 /.serena/
+
+# Supabase CLI scratch
+supabase/.temp/

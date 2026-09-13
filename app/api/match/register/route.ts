@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/require-user';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 import { fetchActiveBan } from '@/lib/moderation/server-bans';
-import { fetchIsAdult } from '@/lib/verification/server-age';
+import { fetchMeetsMinimumAge } from '@/lib/verification/server-age';
 
 export const runtime = 'nodejs';
 
@@ -13,18 +13,18 @@ export async function POST(req: Request) {
     const guard = await requireUser('match/register');
     if ('response' in guard) return guard.response;
     const { user } = guard;
-    const [ban, isAdult] = await Promise.all([
+    const [ban, meetsMinimumAge] = await Promise.all([
       fetchActiveBan(user.id),
-      fetchIsAdult(user.id),
+      fetchMeetsMinimumAge(user.id),
     ]);
 
     // The matching RPCs already refuse underage callers; this exists so the UI
     // gets a reason instead of a session that silently never matches.
-    if (!isAdult) {
+    if (!meetsMinimumAge) {
       return NextResponse.json(
         {
           error: 'Age verification required',
-          reason: 'under_18_or_unverified',
+          reason: 'under_16_or_unverified',
         },
         { status: 403 }
       );

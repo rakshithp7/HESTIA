@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth/require-user';
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
-import { fetchIsAdult } from '@/lib/verification/server-age';
+import { fetchMeetsMinimumAge } from '@/lib/verification/server-age';
 
 export const runtime = 'nodejs';
 
@@ -22,9 +22,9 @@ export async function POST() {
     if ('response' in guard) return guard.response;
     const { user } = guard;
 
-    if (!(await fetchIsAdult(user.id))) {
+    if (!(await fetchMeetsMinimumAge(user.id))) {
       return NextResponse.json(
-        { error: 'Age verification required', reason: 'under_18_or_unverified' },
+        { error: 'Age verification required', reason: 'under_16_or_unverified' },
         { status: 403 }
       );
     }

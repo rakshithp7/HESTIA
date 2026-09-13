@@ -1,27 +1,43 @@
 import { getSupabaseServiceClient } from '@/lib/supabase/service';
 
 /**
- * Whether the member is 18 or older.
+ * Matching cohort for a member.
  *
- * Delegates to the `caller_is_adult` RPC so the API and the matching functions
- * cannot drift apart on what "adult" means. The RPC reads
- * `profiles.date_of_birth`, which members hold no UPDATE grant on, and treats a
- * null DOB as not an adult.
+ *   'adult' - 18 or over
+ *   'minor' - 16 or 17
+ *   null    - under 16, or no date of birth on file
  *
- * Called with the service client because `caller_is_adult` is granted to
- * `service_role` only - it takes a caller uuid, so leaving it reachable with the
- * anon key would let anyone probe any member's age.
+ * The two bands never match with each other; that rule lives inside
+ * `find_match` and `suggested_match_for`, which are the only ways into the
+ * queue. This helper exists so the API routes reject an ineligible member with
+ * a clear error instead of letting them queue and silently never match.
+ *
+ * Delegates to the `caller_age_band` RPC so the API and the matching functions
+ * cannot drift apart on what a band means. The RPC reads
+ * `profiles.date_of_birth`, which members hold no UPDATE grant on, so the band
+ * cannot be forged.
+ *
+ * Called with the service client because `caller_age_band` is granted to
+ * `service_role` only - it takes a caller uuid, so leaving it reachable with
+ * the browser key would let anyone probe any member's age.
  */
-export async function fetchIsAdult(userId: string): Promise<boolean> {
+export type AgeBand = 'adult' | 'minor';
+
+export async function fetchAgeBand(userId: string): Promise<AgeBand | null> {
   const service = getSupabaseServiceClient();
-  const { data, error } = await service.rpc('caller_is_adult', {
+  const { data, error } = await service.rpc('caller_age_band', {
     p_caller: userId,
   });
 
   if (error) {
-    console.error('[verification] Age check failed', error);
+    console.error('[verification] Age band lookup failed', error);
     throw error;
   }
 
-  return data === true;
+  return data === 'adult' || data === 'minor' ? data : null;
+}
+
+/** Whether the member is old enough to use Hestia at all. */
+export async function fetchMeetsMinimumAge(userId: string): Promise<boolean> {
+  return (await fetchAgeBand(userId)) !== null;
 }
