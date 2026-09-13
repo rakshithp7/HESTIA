@@ -1,50 +1,22 @@
 /**
- * Shared constants for the first-visit splash.
+ * Shared constants for the boot loader.
  *
- * This file is values only - the markup lives in `components/BootLoaderHead.tsx`
- * (server) and `components/BootLoader.tsx` (client). It exists because those two
- * run in different environments and must agree on the storage key, the class
- * name and the timings.
- */
-
-/**
- * Set once the splash has played and the essentials are warm.
+ * Values only - the markup lives in `components/BootLoaderHead.tsx` (server) and
+ * `components/BootLoader.tsx` (client). It exists because those two run in
+ * different environments and must agree on the timings and attribute names.
  *
- * Deliberately `sessionStorage`, not `localStorage`. The splash is a preloader:
- * it holds the screen while the shared assets and the main route bundles are
- * fetched, so that navigation afterwards is instant. A `localStorage` flag made
- * it play exactly once per browser ever, which meant that after a single visit
- * it never appeared again no matter how slow the connection - it was invisible
- * precisely when it was needed.
+ * There is deliberately no "already seen" flag. Earlier versions gated the
+ * loader on localStorage and then sessionStorage, which meant it was really
+ * answering "has this browser visited before" when the question that matters is
+ * "is anything still loading right now". Those come apart exactly when the
+ * loader is needed: clear the HTTP cache but keep the flag and you get a slow,
+ * uncovered load. The loader is now shown whenever the essentials are not ready
+ * and hidden the moment they are, so a warm cache dismisses it in a few frames
+ * without any bookkeeping.
  */
-export const BOOT_STORAGE_KEY = 'hestia:warmed';
 
-/**
- * Routes warmed while the splash is up - everything a signed-out visitor can
- * reach from the navbar. Prefetching these means the first navigation after the
- * splash does not hit the network.
- */
-export const BOOT_WARM_ROUTES = [
-  '/about',
-  '/connect',
-  '/resources',
-  '/contact',
-] as const;
-
-/** Images warmed while the splash is up. */
-export const BOOT_WARM_IMAGES = ['/logo.svg'] as const;
-
-/**
- * Upper bound on warming. The splash should cover a slow load, but a stalled
- * request must not hold the screen forever.
- */
-export const BOOT_WARM_TIMEOUT_MS = 10000;
-
-/** Class on `<html>` while the splash should be visible. */
-export const BOOT_FLAG = 'first-visit';
-
-/** Global holding the moment the splash became visible, set before paint. */
-export const BOOT_START_GLOBAL = '__hestiaSplashStart';
+/** Global holding the moment the loader first painted, set before paint. */
+export const BOOT_START_GLOBAL = '__hestiaBootStart';
 
 /** How long the fill takes. Mirrored by the CSS animation. */
 export const FILL_DURATION_MS = 1400;
@@ -53,18 +25,52 @@ export const FILL_DURATION_MS = 1400;
 export const FADE_DURATION_MS = 400;
 
 /**
- * Only reached if React never mounts at all, so the overlay cannot be left
- * covering the site. Generous, because a slow connection is exactly when the
- * splash matters most - an earlier 6s value fired during a normal slow-4G load
- * and tore the splash down before it was ever seen.
+ * Below this the loader is removed with no fade, on the basis that nothing was
+ * painted yet. Kept small on purpose: anything longer and the mark is briefly
+ * visible before vanishing, which reads as a glitch. Past this point the loader
+ * commits to the full fill instead - see BOOT_MIN_VISIBLE_MS.
+ */
+export const BOOT_IMPERCEPTIBLE_MS = 120;
+
+/**
+ * Once the loader has been seen at all, it stays for at least this long. A
+ * half-drawn mark that disappears mid-fill looks broken, so a load that is
+ * merely quick rather than instant still gets the whole animation.
+ */
+export const BOOT_MIN_VISIBLE_MS = FILL_DURATION_MS;
+
+/**
+ * Only reached if React never mounts, so the overlay cannot be left covering
+ * the site.
  */
 export const BOOT_FAILSAFE_MS = 20000;
+
+/**
+ * Routes warmed while the loader is up - everything a signed-out visitor can
+ * reach from the navbar. Prefetching these means the first navigation after the
+ * loader does not hit the network.
+ */
+export const BOOT_WARM_ROUTES = [
+  '/about',
+  '/connect',
+  '/resources',
+  '/contact',
+] as const;
+
+/** Images warmed while the loader is up. */
+export const BOOT_WARM_IMAGES = ['/logo.svg'] as const;
+
+/**
+ * Upper bound on warming. The loader should cover a slow load, but a stalled
+ * request must not hold the screen forever.
+ */
+export const BOOT_WARM_TIMEOUT_MS = 10000;
 
 /**
  * Theme colours as literals rather than `var(--background)`.
  *
  * The custom properties live in globals.css, which is render-blocking but still
- * arrives after the document. The splash has to paint before then, so it cannot
+ * arrives after the document. The loader has to paint before then, so it cannot
  * depend on them.
  */
 export const BOOT_COLORS = {
@@ -74,5 +80,3 @@ export const BOOT_COLORS = {
   darkForeground: '#c29ec1',
 } as const;
 
-/** Intrinsic size of `/splash-mask.png`, used for the overlay's aspect ratio. */
-export const BOOT_MASK_ASPECT = '256 / 398';
