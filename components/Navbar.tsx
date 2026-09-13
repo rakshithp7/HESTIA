@@ -11,11 +11,9 @@ import { Button } from '@/components/ui/button';
 import { getVerifiedUser } from '@/lib/supabase/auth-utils';
 import UserAvatar from './UserAvatar';
 import { cn } from '@/lib/utils';
-import dynamic from 'next/dynamic';
 import { Menu } from 'lucide-react';
 import type { ProfileRole } from '@/lib/supabase/types';
 
-// Use dynamic export to ensure the component only renders on the client side
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -290,5 +288,9 @@ const Navbar = () => {
   );
 };
 
-// Export with SSR disabled to prevent window/document access during server rendering
-export default dynamic(() => Promise.resolve(Navbar), { ssr: false });
+// Server-rendered so the bar is in the HTML rather than appearing after
+// hydration. Nothing here touches window or document during render, so there is
+// no reason to opt out of SSR. Auth-dependent parts still resolve in an effect:
+// the server renders the signed-out shape and the avatar appears once
+// getVerifiedUser returns.
+export default Navbar;
