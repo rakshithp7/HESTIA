@@ -249,6 +249,14 @@ export function AuthForms({ initialMode = 'signIn' }: AuthFormsProps) {
               {loading ? 'Creating account…' : 'Create my account'}
             </Button>
 
+            <p className="text-center text-xs text-muted-foreground">
+              By creating an account you agree to our{' '}
+              <Link href="/legal" className="underline underline-offset-4">
+                Terms &amp; Privacy
+              </Link>
+              . You must be 16 or older.
+            </p>
+
             <div className="text-center text-sm">
               Already have an account?{' '}
               <Button
