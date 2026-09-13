@@ -10,6 +10,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { FloatingSessionWindow } from '@/components/session/FloatingSessionWindow';
 import { ConnectedSessionStatusBar } from '@/components/session/ConnectedSessionStatusBar';
 import { SessionTitleHandler } from '@/components/session/SessionTitleHandler';
+import { BootLoader } from '@/components/BootLoader';
+import { bootLoaderScript } from '@/lib/boot-loader';
 
 const unna = Unna({
   variable: '--font-unna',
@@ -66,9 +68,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Must run before first paint - see lib/boot-loader.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: bootLoaderScript }} />
+      </head>
       <body
         className={`${unna.variable} ${difont.variable} ${openDyslexic.variable} antialiased`}
       >
+        <BootLoader />
         <ThemeProvider>
           <AccessibilityProvider>
             <RTCSessionProvider>
