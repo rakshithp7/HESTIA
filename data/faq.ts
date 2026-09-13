@@ -1,4 +1,4 @@
-export type FAQItemId = 'how' | 'who' | 'why';
+export type FAQItemId = 'how' | 'who' | 'why' | 'origin';
 
 export type FAQItem = {
   id: FAQItemId;
@@ -48,6 +48,27 @@ export const FAQ_ITEMS: FAQItem[] = [
     heading: 'Why Hestia?',
     paragraphs: [
       'Because compassionate, judgment-free conversations matter. Hestia prioritizes privacy, simplicity, and meaningful human connection without pressure, costs, or complexity.',
+    ],
+  },
+  {
+    id: 'origin',
+    heading: 'Where Hestia came from',
+    paragraphs: [
+      'Mental health is talked about far more openly than it used to be, but the tools meant to help can still feel hard to approach. Crisis lines do essential work, though reaching one can feel clinical, distant, or higher-stakes than what someone is going through. Wellness apps often feel impersonal. Both tend to treat every person the same way, and in a hard moment people are willing to ask for help — they just don’t want it to feel scripted.',
+      'That gap is where Hestia started. Early research into existing chat apps, alongside conversations with people who had used hotlines and support platforms, turned up something uncomfortable: the tools were convenient and available, yet often left people feeling more isolated rather than less. A one-size-fits-all structure made it difficult to feel genuinely heard.',
+      'The name comes from Hestia, the Greek goddess of the hearth and the home — the idea of a safe place to sit for a while. The format takes its cue from the open-ended, talk-to-a-stranger quality of early internet chat, but rebuilt around verified age groups and shared topics, so the person on the other side is closer to where you actually are.',
+    ],
+    subSections: [
+      {
+        title: 'What we set out to do',
+        content:
+          'Offer support that bends to the person rather than the other way round; make room for empathy and relatability by putting people with peers rather than scripts; and strip out enough anxiety and friction that reaching out feels like a small step instead of a big one.',
+      },
+      {
+        title: 'Credit',
+        content:
+          'Hestia began as a three-week independent product design project by Diya Sharma, covering the concept, user research, interaction design, visual system, and accessibility decisions, built out in collaboration with a developer.',
+      },
     ],
   },
 ];

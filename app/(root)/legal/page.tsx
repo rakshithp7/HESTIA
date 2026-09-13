@@ -34,7 +34,10 @@ export default function LegalPage() {
           </h2>
           <p className="text-md md:text-lg leading-relaxed drop-shadow-sm">
             What you agree to by using Hestia, and what happens to your
-            information. Last updated {LAST_UPDATED}.
+            information.
+          </p>
+          <p className="mt-3 text-sm opacity-80 drop-shadow-sm">
+            Last updated {LAST_UPDATED}
           </p>
         </div>
       </section>
